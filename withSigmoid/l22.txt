@@ -1,0 +1,237 @@
+Model Name:  None
+Warning: Model name is not specified. It's EXPECTED if you are initializing a 'models.py'. Otherwise Your model will be saved in 'checkpoints/00_TMP_MODEL' folder.
+[NeMo I 2023-03-25 11:51:10 mixins:170] Tokenizer SentencePieceTokenizer initialized with 128 tokens
+[NeMo I 2023-03-25 11:51:10 features:286] PADDING: 0
+[NeMo I 2023-03-25 11:51:14 save_restore_connector:247] Model EncDecCTCModelBPE was successfully restored from /home/ubuntu/.cache/huggingface/hub/models--nvidia--stt_en_conformer_ctc_large/snapshots/2c8326e4e43ae5b994612cfea3f3029818fb23c6/stt_en_conformer_ctc_large.nemo.
+Using GPU: Tesla T4
+Model Name:  01_mel_mono_loss_v2_2
+Checking paths...
+Folder created: /home/ubuntu/elec823/log/01_mel_mono_loss_v2_2
+Folder created: /home/ubuntu/elec823/checkpoints/01_mel_mono_loss_v2_2
+Seed set to: 3407
+Start Time:  2023/03/25 11:51:14
+
+Fold 1/5: Epoch 1/100
+	 Train Loss: 0.5581
+		MSE: 0.1018
+		MAE: 0.1885
+		Pearson Correlation: 0.6306
+		Spearman Correlation: 0.5247
+	 Validation Loss: 0.5143
+		MSE: 0.0923
+		MAE: 0.1750
+		Pearson Correlation: 0.6638
+		Spearman Correlation: 0.5739
+	Saving first model at /home/ubuntu/elec823/checkpoints/01_mel_mono_loss_v2_2/1_1_0.51, with loss: 0.5143
+
+Fold 1/5: Epoch 2/100
+	 Train Loss: 0.5339
+		MSE: 0.0978
+		MAE: 0.1818
+		Pearson Correlation: 0.6529
+		Spearman Correlation: 0.5372
+	 Validation Loss: 0.5229
+		MSE: 0.0917
+		MAE: 0.1743
+		Pearson Correlation: 0.6662
+		Spearman Correlation: 0.5740
+	Early stopping patience: [1/10]
+
+Fold 1/5: Epoch 3/100
+	 Train Loss: 0.5354
+		MSE: 0.0976
+		MAE: 0.1813
+		Pearson Correlation: 0.6537
+		Spearman Correlation: 0.5424
+	 Validation Loss: 0.5431
+		MSE: 0.0923
+		MAE: 0.1753
+		Pearson Correlation: 0.6650
+		Spearman Correlation: 0.5749
+	Early stopping patience: [2/10]
+
+Fold 1/5: Epoch 4/100
+	 Train Loss: 0.5333
+		MSE: 0.0976
+		MAE: 0.1809
+		Pearson Correlation: 0.6546
+		Spearman Correlation: 0.5353
+	 Validation Loss: 0.5352
+		MSE: 0.0931
+		MAE: 0.1758
+		Pearson Correlation: 0.6631
+		Spearman Correlation: 0.5761
+	Early stopping patience: [3/10]
+
+Fold 1/5: Epoch 5/100
+	 Train Loss: 0.5396
+		MSE: 0.0979
+		MAE: 0.1818
+		Pearson Correlation: 0.6531
+		Spearman Correlation: 0.5404
+	 Validation Loss: 0.5276
+		MSE: 0.0926
+		MAE: 0.1755
+		Pearson Correlation: 0.6645
+		Spearman Correlation: 0.5762
+	Early stopping patience: [4/10]
+
+Fold 1/5: Epoch 6/100
+	 Train Loss: 0.5404
+		MSE: 0.0983
+		MAE: 0.1822
+		Pearson Correlation: 0.6514
+		Spearman Correlation: 0.5424
+	 Validation Loss: 0.5163
+		MSE: 0.0935
+		MAE: 0.1762
+		Pearson Correlation: 0.6618
+		Spearman Correlation: 0.5767
+	Early stopping patience: [5/10]
+
+Fold 1/5: Epoch 7/100
+	 Train Loss: 0.5317
+		MSE: 0.0974
+		MAE: 0.1813
+		Pearson Correlation: 0.6549
+		Spearman Correlation: 0.5346
+	 Validation Loss: 0.5282
+		MSE: 0.0919
+		MAE: 0.1746
+		Pearson Correlation: 0.6653
+		Spearman Correlation: 0.5737
+	Early stopping patience: [6/10]
+
+Fold 1/5: Epoch 8/100
+	 Train Loss: 0.5342
+		MSE: 0.0977
+		MAE: 0.1811
+		Pearson Correlation: 0.6548
+		Spearman Correlation: 0.5364
+	 Validation Loss: 0.5000
+		MSE: 0.0919
+		MAE: 0.1747
+		Pearson Correlation: 0.6659
+		Spearman Correlation: 0.5749
+Loss is decreasing normally.
+	Saving best model at /home/ubuntu/elec823/checkpoints/01_mel_mono_loss_v2_2/1_8_0.50, with loss: 0.5000
+
+Fold 1/5: Epoch 9/100
+	 Train Loss: 0.5413
+		MSE: 0.0985
+		MAE: 0.1821
+		Pearson Correlation: 0.6497
+		Spearman Correlation: 0.5424
+	 Validation Loss: 0.5037
+		MSE: 0.0934
+		MAE: 0.1761
+		Pearson Correlation: 0.6626
+		Spearman Correlation: 0.5761
+	Early stopping patience: [1/10]
+
+Fold 1/5: Epoch 10/100
+	 Train Loss: 0.5268
+		MSE: 0.0976
+		MAE: 0.1813
+		Pearson Correlation: 0.6546
+		Spearman Correlation: 0.5417
+	 Validation Loss: 0.5214
+		MSE: 0.0928
+		MAE: 0.1753
+		Pearson Correlation: 0.6639
+		Spearman Correlation: 0.5781
+	Early stopping patience: [2/10]
+	Regular saving at /home/ubuntu/elec823/checkpoints/01_mel_mono_loss_v2_2/1_10_0.52, with loss: 0.5214
+
+Fold 1/5: Epoch 11/100
+	 Train Loss: 0.5285
+		MSE: 0.0971
+		MAE: 0.1806
+		Pearson Correlation: 0.6570
+		Spearman Correlation: 0.5402
+	 Validation Loss: 0.5297
+		MSE: 0.0919
+		MAE: 0.1747
+		Pearson Correlation: 0.6659
+		Spearman Correlation: 0.5744
+	Early stopping patience: [3/10]
+
+Fold 1/5: Epoch 12/100
+	 Train Loss: 0.5278
+		MSE: 0.0968
+		MAE: 0.1805
+		Pearson Correlation: 0.6580
+		Spearman Correlation: 0.5421
+	 Validation Loss: 0.5288
+		MSE: 0.0952
+		MAE: 0.1781
+		Pearson Correlation: 0.6583
+		Spearman Correlation: 0.5768
+	Early stopping patience: [4/10]
+
+Fold 1/5: Epoch 13/100
+	 Train Loss: 0.5354
+		MSE: 0.0975
+		MAE: 0.1818
+		Pearson Correlation: 0.6545
+		Spearman Correlation: 0.5344
+	 Validation Loss: 0.5179
+		MSE: 0.0919
+		MAE: 0.1746
+		Pearson Correlation: 0.6654
+		Spearman Correlation: 0.5772
+	Early stopping patience: [5/10]
+
+Fold 1/5: Epoch 14/100
+	 Train Loss: 0.5367
+		MSE: 0.0978
+		MAE: 0.1813
+		Pearson Correlation: 0.6530
+		Spearman Correlation: 0.5430
+	 Validation Loss: 0.5281
+		MSE: 0.0938
+		MAE: 0.1765
+		Pearson Correlation: 0.6617
+		Spearman Correlation: 0.5765
+	Early stopping patience: [6/10]
+
+Fold 1/5: Epoch 15/100
+	 Train Loss: 0.5233
+		MSE: 0.0964
+		MAE: 0.1795
+		Pearson Correlation: 0.6603
+		Spearman Correlation: 0.5417
+	 Validation Loss: 0.5210
+		MSE: 0.0926
+		MAE: 0.1754
+		Pearson Correlation: 0.6638
+		Spearman Correlation: 0.5752
+	Early stopping patience: [7/10]
+
+Fold 1/5: Epoch 16/100
+	 Train Loss: 0.5323
+		MSE: 0.0972
+		MAE: 0.1811
+		Pearson Correlation: 0.6562
+		Spearman Correlation: 0.5356
+	 Validation Loss: 0.5038
+		MSE: 0.0915
+		MAE: 0.1746
+		Pearson Correlation: 0.6657
+		Spearman Correlation: 0.5748
+	Early stopping patience: [8/10]
+
+Fold 1/5: Epoch 17/100
+	 Train Loss: 0.5336
+		MSE: 0.0975
+		MAE: 0.1811
+		Pearson Correlation: 0.6551
+		Spearman Correlation: 0.5356
+	 Validation Loss: 0.5492
+		MSE: 0.0918
+		MAE: 0.1744
+		Pearson Correlation: 0.6659
+		Spearman Correlation: 0.5737
+	Early stopping patience: [9/10]
+
+Fold 1/5: Epoch 18/100

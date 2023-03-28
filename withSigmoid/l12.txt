@@ -1,0 +1,14 @@
+Model Name:  None
+Warning: Model name is not specified. It's EXPECTED if you are initializing a 'models.py'. Otherwise Your model will be saved in 'checkpoints/00_TMP_MODEL' folder.
+[NeMo I 2023-03-25 10:32:16 mixins:170] Tokenizer SentencePieceTokenizer initialized with 128 tokens
+[NeMo I 2023-03-25 10:32:16 features:286] PADDING: 0
+[NeMo I 2023-03-25 10:32:20 save_restore_connector:247] Model EncDecCTCModelBPE was successfully restored from /home/ubuntu/.cache/huggingface/hub/models--nvidia--stt_en_conformer_ctc_large/snapshots/2c8326e4e43ae5b994612cfea3f3029818fb23c6/stt_en_conformer_ctc_large.nemo.
+Using GPU: Tesla T4
+Model Name:  01_mel_mono_loss_v1_2
+Checking paths...
+Folder created: /home/ubuntu/elec823/log/01_mel_mono_loss_v1_2
+Folder created: /home/ubuntu/elec823/checkpoints/01_mel_mono_loss_v1_2
+Seed set to: 3407
+Start Time:  2023/03/25 10:32:20
+
+Fold 1/5: Epoch 1/100
