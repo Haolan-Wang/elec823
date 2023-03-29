@@ -105,6 +105,8 @@ class InitializationTrain:
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
         torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.enabled = True
+        torch.backends.cudnn.benchmark = True
         if self.verbose:
             print("Seed set to:", seed)
 
@@ -148,6 +150,7 @@ class InitializationTrain:
 class ErrorCal():
     """Input y_true and y_pred when initilizing, return pearson, spearman, mse loss"""
     def __init__(self, y_true, y_pred):
+        
         self.mse_loss = torch.nn.functional.mse_loss(y_true, y_pred)
         self.mae_loss = torch.nn.functional.l1_loss(y_true, y_pred)
         self.pearson_coef = torch.corrcoef(torch.stack((y_true, y_pred)))[0, 1] 

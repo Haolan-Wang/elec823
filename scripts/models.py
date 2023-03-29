@@ -553,9 +553,9 @@ class Wav2vecPredictor(nn.Module):
         self.wav2vec_model = Wav2Vec2Model.from_pretrained(self.MODEL_ID) 
         self.predictor = nn.Sequential(
             nn.Linear(in_features=299 * 1024, out_features=256),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Linear(in_features=256, out_features=128),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Linear(in_features=128, out_features=1),
             nn.Sigmoid(),
         )
