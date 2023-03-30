@@ -176,7 +176,7 @@ def train_mono(model, dataset, CONSTANTS,
     print("==========================DONE==========================")
     
 if __name__ == "__main__":
-    MODEL = '03_wav2vec2_xlarge_nf_mse_lr=1e-3'
+    MODEL = '03_wav2vec2_xlarge_nf_mse_pearson_lr=1e-6'
     # nf means no freeze
     # format: 00_NAME_nf(f)_loss_lr=
     model = Wav2vecPredictor().to(device)
@@ -207,7 +207,7 @@ if __name__ == "__main__":
         dataset=dataset,
         CONSTANTS=CONSTANTS,
         batch_size=4,
-        lr=1e-3,
+        lr=1e-6,
         gamma=0.2,
         step_size=5,
         num_folds=5,
@@ -216,7 +216,7 @@ if __name__ == "__main__":
         save_every=10,
         patience = 5,
         torlance=0.005,
-        criterion=MyLoss_v0_1()
+        criterion=MyLoss_v2_1()
         # v01 is MSE loss
         # v21 is MSE + Pearson loss
     )
