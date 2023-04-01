@@ -6,6 +6,6 @@ ELEC 823 project: Non-reference SIP
 ### Wav2vec2
 
 ## Predict SIP with ASR confidence
-### Confermer-transducer
+### Conformer-transducer
 
 ## Combined model
