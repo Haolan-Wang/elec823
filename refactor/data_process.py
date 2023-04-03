@@ -1,12 +1,12 @@
 import openpyxl
-import json
 from collections import OrderedDict
 
 import torchaudio
 from torch.utils.data import Dataset
 from utils import *
 
-CONSTANTS = InitializationTrain(verbose=True)
+CONSTANTS = InitializationTrain()
+
 
 class CPCdata(Dataset):
     """
@@ -29,7 +29,7 @@ class CPCdata(Dataset):
         path = CONSTANTS.DATA_PATH + self.metadata["path"][idx] + ".wav"
         speech, sr = torchaudio.load(path)
         # Remove the first 2 and last second (noise)
-        speech = speech[:, 2 * sr : -sr]
+        speech = speech[:, 2 * sr: -sr]
 
         # Resample the audio to 16kHz sample rate
         if sr != CONSTANTS.new_freq:
@@ -60,10 +60,11 @@ class CPCdata(Dataset):
 
         return speech_augmented, info
 
+
 class CPCdataMono(Dataset):
     """
         Returns:
-        speech [2, 96000]
+        speech [1, 96000]
         info: OrderedDict{path, score, listener, system, scene, volume, prompt}
     """
 
@@ -82,7 +83,7 @@ class CPCdataMono(Dataset):
         speech, sr = torchaudio.load(path)
         speech = torch.squeeze(speech)
         # Remove the first 2 and last second (noise)
-        speech = speech[2 * sr : -sr]
+        speech = speech[2 * sr: -sr]
 
         # Resample the audio to 16kHz sample rate
         if sr != CONSTANTS.new_freq:
@@ -106,9 +107,10 @@ class CPCdataMono(Dataset):
         info = OrderedDict()
         for key, value in self.metadata.items():
             info[key] = value[idx]
+        info['path'] = path
         # info = deepcopy(info)
 
-        # speech size: [2, 96000]
+        # speech size: [1, 96000]
         # path, score, listener, system, scene, volume, prompt
 
         return speech_augmented, info

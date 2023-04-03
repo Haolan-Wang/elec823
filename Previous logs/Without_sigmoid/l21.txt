@@ -1,0 +1,188 @@
+Model Name:  None
+Warning: Model name is not specified. It's EXPECTED if you are initializing a 'models.py'. Otherwise Your model will be saved in 'checkpoints/00_TMP_MODEL' folder.
+[NeMo I 2023-03-26 04:18:04 mixins:170] Tokenizer SentencePieceTokenizer initialized with 128 tokens
+[NeMo I 2023-03-26 04:18:04 features:286] PADDING: 0
+[NeMo I 2023-03-26 04:18:08 save_restore_connector:247] Model EncDecCTCModelBPE was successfully restored from /home/ubuntu/.cache/huggingface/hub/models--nvidia--stt_en_conformer_ctc_large/snapshots/2c8326e4e43ae5b994612cfea3f3029818fb23c6/stt_en_conformer_ctc_large.nemo.
+Using GPU: Tesla T4
+Model Name:  01_mel_mono_loss_without_v2_1
+Checking paths...
+Folder created: /home/ubuntu/elec823/log/01_mel_mono_loss_without_v2_1
+Folder created: /home/ubuntu/elec823/checkpoints/01_mel_mono_loss_without_v2_1
+Folder already exists: /home/ubuntu/elec823/log/last_output/
+Seed set to: 3407
+Start Time:  2023/03/26 04:18:08
+
+Fold 1/5: Epoch 1/100
+	 Train Loss: 1.0555
+		MSE: 0.5681
+		MAE: 0.3603
+		Pearson Correlation: 0.2516
+		Spearman Correlation: 0.3768
+	 Validation Loss: 0.6279
+		MSE: 0.1816
+		MAE: 0.3165
+		Pearson Correlation: 0.5422
+		Spearman Correlation: 0.4262
+	Saving best model at /home/ubuntu/elec823/checkpoints/01_mel_mono_loss_without_v2_1/1_1, with loss: 0.6279
+
+Fold 1/5: Epoch 2/100
+	 Train Loss: 0.6022
+		MSE: 0.1391
+		MAE: 0.2564
+		Pearson Correlation: 0.5389
+		Spearman Correlation: 0.4180
+	 Validation Loss: 0.6428
+		MSE: 0.1786
+		MAE: 0.3111
+		Pearson Correlation: 0.5423
+		Spearman Correlation: 0.4273
+	Early stopping patience: [1/5]
+
+Fold 1/5: Epoch 3/100
+	 Train Loss: 0.5818
+		MSE: 0.1351
+		MAE: 0.2516
+		Pearson Correlation: 0.5540
+		Spearman Correlation: 0.4284
+	 Validation Loss: 0.6226
+		MSE: 0.1671
+		MAE: 0.2990
+		Pearson Correlation: 0.5622
+		Spearman Correlation: 0.4388
+Loss is decreasing and exceed the threshold.
+	Saving best model at /home/ubuntu/elec823/checkpoints/01_mel_mono_loss_without_v2_1/1_3, with loss: 0.6226
+
+Fold 1/5: Epoch 4/100
+	 Train Loss: 0.5991
+		MSE: 0.1378
+		MAE: 0.2562
+		Pearson Correlation: 0.5420
+		Spearman Correlation: 0.4201
+	 Validation Loss: 0.6478
+		MSE: 0.1787
+		MAE: 0.3128
+		Pearson Correlation: 0.5413
+		Spearman Correlation: 0.4246
+	Early stopping patience: [1/5]
+
+Fold 1/5: Epoch 5/100
+	 Train Loss: 0.6008
+		MSE: 0.1370
+		MAE: 0.2538
+		Pearson Correlation: 0.5454
+		Spearman Correlation: 0.4130
+	 Validation Loss: 0.6225
+		MSE: 0.1632
+		MAE: 0.2964
+		Pearson Correlation: 0.5659
+		Spearman Correlation: 0.4430
+	Early stopping patience: [2/5]
+
+Fold 1/5: Epoch 6/100
+	 Train Loss: 0.5909
+		MSE: 0.1364
+		MAE: 0.2534
+		Pearson Correlation: 0.5487
+		Spearman Correlation: 0.4273
+	 Validation Loss: 0.6317
+		MSE: 0.1735
+		MAE: 0.3057
+		Pearson Correlation: 0.5479
+		Spearman Correlation: 0.4303
+	Early stopping patience: [3/5]
+
+Fold 1/5: Epoch 7/100
+	 Train Loss: 0.5977
+		MSE: 0.1377
+		MAE: 0.2576
+		Pearson Correlation: 0.5394
+		Spearman Correlation: 0.4282
+	 Validation Loss: 0.6459
+		MSE: 0.1750
+		MAE: 0.3094
+		Pearson Correlation: 0.5437
+		Spearman Correlation: 0.4265
+	Early stopping patience: [4/5]
+
+Fold 1/5: Epoch 8/100
+	 Train Loss: 0.5985
+		MSE: 0.1381
+		MAE: 0.2558
+		Pearson Correlation: 0.5402
+		Spearman Correlation: 0.4036
+	 Validation Loss: 0.6090
+		MSE: 0.1722
+		MAE: 0.3045
+		Pearson Correlation: 0.5579
+		Spearman Correlation: 0.4381
+Loss is decreasing and exceed the threshold.
+	Saving best model at /home/ubuntu/elec823/checkpoints/01_mel_mono_loss_without_v2_1/1_8, with loss: 0.6090
+
+Fold 1/5: Epoch 9/100
+	 Train Loss: 0.5957
+		MSE: 0.1367
+		MAE: 0.2534
+		Pearson Correlation: 0.5475
+		Spearman Correlation: 0.4195
+	 Validation Loss: 0.5974
+		MSE: 0.1731
+		MAE: 0.3069
+		Pearson Correlation: 0.5531
+		Spearman Correlation: 0.4377
+Loss is decreasing and exceed the threshold.
+	Saving best model at /home/ubuntu/elec823/checkpoints/01_mel_mono_loss_without_v2_1/1_9, with loss: 0.5974
+
+Fold 1/5: Epoch 10/100
+	 Train Loss: 0.5898
+		MSE: 0.1361
+		MAE: 0.2531
+		Pearson Correlation: 0.5493
+		Spearman Correlation: 0.4280
+	 Validation Loss: 0.6679
+		MSE: 0.1854
+		MAE: 0.3190
+		Pearson Correlation: 0.5307
+		Spearman Correlation: 0.4250
+	Early stopping patience: [1/5]
+	Regular saving at /home/ubuntu/elec823/checkpoints/01_mel_mono_loss_without_v2_1/1_10, with loss: 0.6679
+
+Fold 1/5: Epoch 11/100
+	 Train Loss: 0.5883
+		MSE: 0.1355
+		MAE: 0.2527
+		Pearson Correlation: 0.5529
+		Spearman Correlation: 0.4164
+	 Validation Loss: 0.6212
+		MSE: 0.1691
+		MAE: 0.3013
+		Pearson Correlation: 0.5567
+		Spearman Correlation: 0.4364
+	Early stopping patience: [2/5]
+
+Fold 1/5: Epoch 12/100
+	 Train Loss: 0.5986
+		MSE: 0.1376
+		MAE: 0.2551
+		Pearson Correlation: 0.5412
+		Spearman Correlation: 0.4174
+	 Validation Loss: 0.5939
+		MSE: 0.1659
+		MAE: 0.3017
+		Pearson Correlation: 0.5638
+		Spearman Correlation: 0.4421
+	Early stopping patience: [3/5]
+
+Fold 1/5: Epoch 13/100
+	 Train Loss: 0.6067
+		MSE: 0.1394
+		MAE: 0.2568
+		Pearson Correlation: 0.5343
+		Spearman Correlation: 0.4127
+	 Validation Loss: 0.6189
+		MSE: 0.1732
+		MAE: 0.3058
+		Pearson Correlation: 0.5516
+		Spearman Correlation: 0.4333
+	Early stopping patience: [4/5]
+
+Fold 1/5: Epoch 14/100
