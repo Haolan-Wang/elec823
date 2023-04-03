@@ -205,3 +205,4 @@ class EarlyStop:
                 print(f"\tRegular saving at {save_path}, with loss: {current_loss:.4f}")
         except:
             print("[Error] Saving failed.")
+

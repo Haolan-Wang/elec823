@@ -14,12 +14,10 @@ class MappingLayer(nn.Module):
         self.b = nn.Parameter(torch.randn(1))
 
     def forward(self, x):
-        a_expanded = self.a.expand_as(x)
-        b_expanded = self.b.expand_as(x)
-        return 1 / (1 + torch.exp(a_expanded * x + b_expanded))
-
-
-
+        return 1 / (1 + torch.exp(self.a * x + self.b))
+        # a_expanded = self.a.expand_as(x)
+        # b_expanded = self.b.expand_as(x)
+        # return 1 / (1 + torch.exp(a_expanded * x + b_expanded))
 
 
 class WordConfidence(nn.Module):
@@ -29,7 +27,9 @@ class WordConfidence(nn.Module):
 
     def __init__(self):
         super(WordConfidence, self).__init__()
-        self.asr_model = nemo_asr.models.EncDecRNNTBPEModel.from_pretrained("nvidia/stt_en_conformer_transducer_xlarge")
+        self.asr_model = nemo_asr.models.EncDecRNNTBPEModel.from_pretrained(
+            "nvidia/stt_en_conformer_transducer_xlarge"
+        )    # Freeze ASR model
         for param in self.asr_model.parameters():
             param.requires_grad = False
 
@@ -44,15 +44,19 @@ class WordConfidence(nn.Module):
 
     def forward(self, speech_input, meta_data):
         # output of asr model is [B, word_len]
-        mono_path = meta_data['path']
-        confidence, _ = self.asr_model.transcribe(paths2audio_files=mono_path, return_hypotheses=True, batch_size=32)
+        mono_path = meta_data["path"]
+        confidence, _ = self.asr_model.transcribe(
+            paths2audio_files=mono_path, return_hypotheses=True, batch_size=32
+        )
         confidence = [confidence[i].word_confidence for i in range(len(confidence))]
         # padding and truncating to 10: output shape [B, 10]
-        confidence = torch.stack(list(map(self.truncate_and_pad, confidence)), dim=0).to(device)
+        confidence = torch.stack(
+            list(map(self.truncate_and_pad, confidence)), dim=0
+        ).to(device)
         pred = self.mapping(self.predictor(confidence))
 
         return pred
-    
+
     def truncate_and_pad(self, tensor):
         FIXED_LENGTH = 10
         if type(tensor) is not torch.Tensor:

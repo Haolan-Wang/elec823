@@ -32,13 +32,24 @@ def train_mono(model, dataset, CONSTANTS,
                num_epochs=100,
                num_workers=8,
                save_every=10,
-               patience=10,
+               patience=5,
                tolerance=0.005,
                criterion=nn.MSELoss()):
     device = CONSTANTS.device
-    train_writer = SummaryWriter("/home/ubuntu/elec823/log/" + CONSTANTS.MODEL_NAME + "/train")
-    val_writer = SummaryWriter("/home/ubuntu/elec823/log/" + CONSTANTS.MODEL_NAME + "/val")
-
+    writer = SummaryWriter("/home/ubuntu/elec823/log/" + CONSTANTS.MODEL_NAME )
+    writer.add_text("Info/Model Name", CONSTANTS.MODEL_NAME)
+    writer.add_text("Info/Batch size", str(batch_size))
+    writer.add_text("Info/Learning rate", str(lr))
+    writer.add_text("Info/Gamma", str(gamma))
+    writer.add_text("Info/Step size", str(step_size))
+    writer.add_text("Info/Number of folds", str(num_folds))
+    writer.add_text("Info/Number of epochs", str(num_epochs))
+    writer.add_text("Info/Number of workers", str(num_workers))
+    writer.add_text("Info/save every", str(save_every))
+    writer.add_text("Info/Patience", str(patience))
+    writer.add_text("Info/Tolerance", str(tolerance))
+    writer.add_text("Info/Criterion", str(criterion))
+    
     time_start = time.time()
     now = datetime.datetime.now()
     current_time = now.strftime("%Y/%m/%d %H:%M:%S")
@@ -81,8 +92,8 @@ def train_mono(model, dataset, CONSTANTS,
 
                 train_loss += loss.item() / len(train_loader)
 
-                del speech_input, score, pred, loss
-                torch.cuda.empty_cache()
+                # del speech_input, score, pred, loss
+                # torch.cuda.empty_cache()
 
             with torch.no_grad():
                 model.eval()
@@ -102,8 +113,8 @@ def train_mono(model, dataset, CONSTANTS,
                     val_preds = torch.cat((val_preds, pred.to('cpu')))
                     val_loss += loss.item() / len(val_loader)
 
-                    del speech_input, score, pred, loss
-                    torch.cuda.empty_cache()
+                    # del speech_input, score, pred, loss
+                    # torch.cuda.empty_cache()
 
             train_error = ErrorCal(train_scores, train_preds)
             print(f"\t Train Loss: {train_loss:.4f}")
@@ -119,19 +130,19 @@ def train_mono(model, dataset, CONSTANTS,
             print(f"\t\tPearson Correlation: {val_error.pearson_coef:.4f}")
             print(f"\t\tSpearman Correlation: {val_error.spearman_coef:.4f}")
 
-            train_writer.add_scalar("loss", train_loss, fold * num_epochs + epoch)
-            train_writer.add_scalar("MSE", train_error.mse_loss, fold * num_epochs + epoch)
-            train_writer.add_scalar("MAE", train_error.mae_loss, fold * num_epochs + epoch)
-            train_writer.add_scalar("Pearson", train_error.pearson_coef, fold * num_epochs + epoch)
-            train_writer.add_scalar("Spearman", train_error.spearman_coef, fold * num_epochs + epoch)
-            val_writer.add_scalar("loss", val_loss, fold * num_epochs + epoch)
-            val_writer.add_scalar("MSE", val_error.mse_loss, fold * num_epochs + epoch)
-            val_writer.add_scalar("MAE", val_error.mae_loss, fold * num_epochs + epoch)
-            val_writer.add_scalar("Pearson", val_error.pearson_coef, fold * num_epochs + epoch)
-            val_writer.add_scalar("Spearman", val_error.spearman_coef, fold * num_epochs + epoch)
+            writer.add_scalar("Train/loss", train_loss, fold * num_epochs + epoch)
+            writer.add_scalar("Train/MSE", train_error.mse_loss, fold * num_epochs + epoch)
+            writer.add_scalar("Train/MAE", train_error.mae_loss, fold * num_epochs + epoch)
+            writer.add_scalar("Train/Pearson", train_error.pearson_coef, fold * num_epochs + epoch)
+            writer.add_scalar("Train/Spearman", train_error.spearman_coef, fold * num_epochs + epoch)
+            writer.add_scalar("Validation/loss", val_loss, fold * num_epochs + epoch)
+            writer.add_scalar("Validation/MSE", val_error.mse_loss, fold * num_epochs + epoch)
+            writer.add_scalar("Validation/MAE", val_error.mae_loss, fold * num_epochs + epoch)
+            writer.add_scalar("Validation/Pearson", val_error.pearson_coef, fold * num_epochs + epoch)
+            writer.add_scalar("Validation/Spearman", val_error.spearman_coef, fold * num_epochs + epoch)
 
-            del train_loss, train_error, val_error
-            torch.cuda.empty_cache()
+            # del train_loss, train_error, val_error
+            # torch.cuda.empty_cache()
 
             if early_stop(val_loss, fold, epoch):
                 with open(CONSTANTS.last_output + f'{CONSTANTS.MODEL_NAME}_val.txt', mode='w') as f:
@@ -143,8 +154,8 @@ def train_mono(model, dataset, CONSTANTS,
                     f.write("Score, Predict\n")
                     for i in range(len(train_scores)):
                         f.write(f"{train_scores[i].item():.2f}, {train_preds[i].item():.2f}\n")
-                del val_loss, train_scores, train_preds, val_scores, val_preds
-                torch.cuda.empty_cache()
+                # del val_loss, train_scores, train_preds, val_scores, val_preds
+                # torch.cuda.empty_cache()
                 break
         break  # Only execute the first fold so far. Remove this line to run all folds
     try:
@@ -170,14 +181,12 @@ def train_mono(model, dataset, CONSTANTS,
 
 
 if __name__ == "__main__":
-    MODEL = '01_confidence_test'
+    MODEL = 'WordConfidence_01'
     # nf means no freeze
     # format: 00_NAME_nf(f)_loss_lr=
     model = WordConfidence().to(device)
 
-    # # Freeze ASR model
-    # for param in model.wav2vec_model.feature_extractor.parameters():
-    #     param.requires_grad = False
+
 
     CONSTANTS = InitializationTrain(
         model_name=MODEL,
