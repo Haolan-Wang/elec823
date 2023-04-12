@@ -140,6 +140,20 @@ class ErrorCal:
         self.pearson_coef = torch.corrcoef(torch.stack((y_true, y_pred)))[0, 1]
         self.spearman = SpearmanCorrCoef()
         self.spearman_coef = self.spearman(y_true, y_pred)
+        self.ccc = self.concordance_coef(y_true, y_pred)
+    
+    def concordance_coef(self, y_true, y_pred):
+        y_true_mean = torch.mean(y_true)
+        y_pred_mean = torch.mean(y_pred)
+        
+        y_true_var = torch.var(y_true, unbiased=False)
+        y_pred_var = torch.var(y_pred, unbiased=False)
+        
+        covariance = torch.mean((y_true - y_true_mean) * (y_pred - y_pred_mean))
+        
+        ccc = (2 * covariance) / (y_true_var + y_pred_var + (y_true_mean - y_pred_mean)**2)
+        return ccc
+        
 
 
 class EarlyStop:
@@ -195,13 +209,13 @@ class EarlyStop:
         save_path = self.path
         try:
             if state == "best":
-                torch.save(model.state_dict(), save_path + "/best.pth")
+                torch.save(model.state_dict(), save_path + "/best.pt")
                 print(f"\tSaving best model at {save_path}, with loss: {current_loss:.4f}")
             elif state == 'last':
-                torch.save(model.state_dict(), save_path + "/last.pth")
+                torch.save(model.state_dict(), save_path + "/last.pt")
                 print(f"\tSaving last model at {save_path}, with loss: {current_loss:.4f}")
             else:
-                torch.save(model.state_dict(), save_path + f"/{fold + 1}_{epoch + 1}.pth")
+                torch.save(model.state_dict(), save_path + f"/{fold + 1}_{epoch + 1}.pt")
                 print(f"\tRegular saving at {save_path}, with loss: {current_loss:.4f}")
         except:
             print("[Error] Saving failed.")

@@ -39,7 +39,7 @@ def train_mono(model, dataset, CONSTANTS,
     writer = SummaryWriter("/home/ubuntu/elec823/log/" + CONSTANTS.MODEL_NAME )
     writer.add_text("Info/Model Name", CONSTANTS.MODEL_NAME)
     writer.add_text("Info/Batch size", str(batch_size))
-    writer.add_text("Info/Learning rate", str(lr))
+    writer.add_text("Info/Initial learning rate", str(lr))
     writer.add_text("Info/Gamma", str(gamma))
     writer.add_text("Info/Step size", str(step_size))
     writer.add_text("Info/Number of folds", str(num_folds))
@@ -75,6 +75,7 @@ def train_mono(model, dataset, CONSTANTS,
             train_scores = torch.zeros(0)  # .to(device)
             train_preds = torch.zeros(0)  # .to(device)
             for speech_input, info_dict in tqdm(train_loader, desc="Training:"):
+                writer.add_scalar("Info/Learning rate", lr)
                 optimizer.zero_grad()
                 speech_input = speech_input.to(device)
                 score = info_dict["score"].to(torch.float32).to(device)
@@ -143,17 +144,17 @@ def train_mono(model, dataset, CONSTANTS,
 
             # del train_loss, train_error, val_error
             # torch.cuda.empty_cache()
+            with open(CONSTANTS.last_output + f'{CONSTANTS.MODEL_NAME}_val.txt', mode='w') as f:
+                f.write("Score, Predict\n")
+                for i in range(len(val_scores)):
+                    f.write(f"{val_scores[i].item():.2f}, {val_preds[i].item():.2f}\n")
 
+            with open(CONSTANTS.last_output + f'{CONSTANTS.MODEL_NAME}_train.txt', mode='w') as f:
+                f.write("Score, Predict\n")
+                for i in range(len(train_scores)):
+                    f.write(f"{train_scores[i].item():.2f}, {train_preds[i].item():.2f}\n")
             if early_stop(val_loss, fold, epoch):
-                with open(CONSTANTS.last_output + f'{CONSTANTS.MODEL_NAME}_val.txt', mode='w') as f:
-                    f.write("Score, Predict\n")
-                    for i in range(len(val_scores)):
-                        f.write(f"{val_scores[i].item():.2f}, {val_preds[i].item():.2f}\n")
 
-                with open(CONSTANTS.last_output + f'{CONSTANTS.MODEL_NAME}_train.txt', mode='w') as f:
-                    f.write("Score, Predict\n")
-                    for i in range(len(train_scores)):
-                        f.write(f"{train_scores[i].item():.2f}, {train_preds[i].item():.2f}\n")
                 # del val_loss, train_scores, train_preds, val_scores, val_preds
                 # torch.cuda.empty_cache()
                 break
@@ -181,25 +182,34 @@ def train_mono(model, dataset, CONSTANTS,
 
 
 if __name__ == "__main__":
-    MODEL = 'WordConfidence_01'
-    # nf means no freeze
-    # format: 00_NAME_nf(f)_loss_lr=
+    
+    # WordConfidence============================
+    MODEL = 'WordConfidence_05'
     model = WordConfidence().to(device)
-
-
-
+    # 01: MSEPearson
+    # 01.1: MSE Rerun
+    # 02: MSE
+    # 03: MSEConcordanceLoss
+    # 04: sigmoid + MSEPearsonLoss
+    # 05: MSEPearsonConcordanceLoss lr = 1e-4
+    
+    # EncoderPredictor==========================
+    # MODEL = 'EncoderPredictor_06'
+    # 05: MSEConcordanceLoss lr = 1e-4
+    # 06: MSEPearsonConcordanceLoss lr = 1e-3
+    # model = EncoderPredictor().to(device)
+    
     CONSTANTS = InitializationTrain(
         model_name=MODEL,
         verbose=True
     )
-
     dataset = CPCdataMono(metadata=CONSTANTS.metadata)
-
+    
     train_mono(
         model=model,
         dataset=dataset,
         CONSTANTS=CONSTANTS,
         batch_size=32,
-        lr=1e-3,
-        criterion=MSEPearsonLoss()
+        lr=1e-4,
+        criterion=MSEPearsonConcordanceLoss()
     )
