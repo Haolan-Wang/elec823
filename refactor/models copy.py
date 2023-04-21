@@ -15,15 +15,10 @@ class MappingLayer(nn.Module):
 
     def forward(self, x):
         return 1 / (1 + torch.exp(self.a * x + self.b))
+        # a_expanded = self.a.expand_as(x)
+        # b_expanded = self.b.expand_as(x)
+        # return 1 / (1 + torch.exp(a_expanded * x + b_expanded))
 
-class BetterEar(nn.Module):
-    def __init__(self):
-        super(BetterEar, self).__init__()
-        self.a = nn.Parameter(torch.randn(1), requires_grad=True)
-        self.b = nn.Parameter(torch.randn(1), requires_grad=True)
-
-    def forward(self, x, y):
-        return self.a * x + self.b * y
 
 class WordConfidence(nn.Module):
     """Word confidence model: Conformer + Linear predictor + exp mapping
@@ -95,37 +90,21 @@ class EncoderPredictor(nn.Module):
             nn.Linear(in_features=128, out_features=1)
         )
         self.mapping = MappingLayer()
-        self.better_ear = BetterEar()
 
-    def forward(self, speech_l, speech_r, meta_data):
-        # left and right [batch_size, 96000]
+    def forward(self, speech_input, meta_data):
         # mel_out: [3, 80, 608]
-        # speech_l = speech_input[0]
-        # speech_r = speech_input[1]
-        
-        mel_feature_l, mel_feature_length = self.logmel(
-            input_signal=speech_l.to(device),
-            length=torch.full((speech_l.shape[0],), speech_l.shape[1]).to(device),
+        mel_feature, mel_feature_length = self.logmel(
+            input_signal=speech_input.to(device),
+            length=torch.full((speech_input.shape[0],), speech_input.shape[1]).to(
+                device
+            ),
         )
-        mel_feature_r, mel_feature_length = self.logmel(
-            input_signal=speech_r.to(device),
-            length=torch.full((speech_r.shape[0],), speech_r.shape[1]).to(device),
+        encoder_out, encoder_length = self.conformer_encoder(
+            audio_signal=mel_feature.to(device),
+            length=torch.full((mel_feature.shape[0],), mel_feature.shape[2]).to(device),
         )
-        encoded_l, encoder_length = self.conformer_encoder(
-            audio_signal=mel_feature_l.to(device),
-            length=torch.full((mel_feature_l.shape[0],), mel_feature_l.shape[2]).to(device),
-        )
-        encoded_r, encoder_length = self.conformer_encoder(
-            audio_signal=mel_feature_r.to(device),
-            length=torch.full((mel_feature_r.shape[0],), mel_feature_r.shape[2]).to(device),
-        )
-        
         # encoder out : [32, 512, 151]
-        pred_l = self.predictor(encoded_l.contiguous().view(-1, 512 * 151))
-        pred_r = self.predictor(encoded_r.contiguous().view(-1, 512 * 151))
-        
-        # Better ear and mapping
-        pred = self.mapping(self.better_ear(pred_l, pred_r))
+        pred = self.mapping(self.predictor(encoder_out.contiguous().view(-1, 512 * 151)))
 
         return pred
     

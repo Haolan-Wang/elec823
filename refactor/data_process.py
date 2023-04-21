@@ -115,6 +115,68 @@ class CPCdataMono(Dataset):
 
         return speech_augmented, info
 
+class CPCdataBinaural(Dataset):
+    """
+        Returns:
+        [speech_l speech_r] [[96000], [96000]]
+        info: OrderedDict{path, score, listener, system, scene, volume, prompt}
+    """
+
+    def __init__(self, metadata, augmentation=None):
+        self.metadata = metadata
+        self.augmentation = augmentation
+        self.resampler = torchaudio.transforms.Resample(
+            orig_freq=CONSTANTS.orig_freq, new_freq=CONSTANTS.new_freq
+        )
+
+    def __len__(self):
+        return len(self.metadata["path"])
+
+    def __getitem__(self, idx):
+        path_l = CONSTANTS.DATA_PATH + self.metadata["path"][idx] + "_mono_1.wav"
+        path_r = CONSTANTS.DATA_PATH + self.metadata["path"][idx] + "_mono_2.wav"
+        speech_l, sr = torchaudio.load(path_l) # [1, sz]
+        speech_r, sr = torchaudio.load(path_r)
+        speech_l = torch.squeeze(speech_l)
+        speech_r = torch.squeeze(speech_r)
+        # Remove the first 2 and last second (noise)
+        speech_l = speech_l[2 * sr: -sr]
+        speech_r = speech_r[2 * sr: -sr]
+        # Resample the audio to 16kHz sample rate
+        if sr != CONSTANTS.new_freq:
+            speech_l = self.resampler(speech_l)
+            speech_r = self.resampler(speech_r)
+            sr = CONSTANTS.new_freq
+
+        # Pad or trim the audio to 6 seconds
+        desired_length = sr * 6  # keep 6 seconds
+        if speech_l.size(-1) < desired_length:
+            padding = desired_length - speech_l.size(-1)
+            speech_l = torch.nn.functional.pad(speech_l, (0, padding), "constant")
+            speech_r = torch.nn.functional.pad(speech_r, (0, padding), "constant")
+        elif speech_l.size(-1) > desired_length:
+            speech_l = speech_l[..., :desired_length]
+            speech_r = speech_r[..., :desired_length]
+
+        if self.augmentation is not None:
+            speech_augmented_l = self.augmentation(speech_l)
+            speech_augmented_r = self.augmentation(speech_r)
+        else:
+            speech_augmented_l = speech_l
+            speech_augmented_r = speech_r
+        # speech_augmented = deepcopy(speech_augmented)
+
+        info = OrderedDict()
+        for key, value in self.metadata.items():
+            info[key] = value[idx]
+        info['path'] = [path_l, path_r]
+        # info = deepcopy(info)
+
+        # speech size: [1, 96000]
+        # path, score, listener, system, scene, volume, prompt
+
+        return speech_augmented_l, speech_augmented_r, info
+
 
 class ListenerInfo:
     """
