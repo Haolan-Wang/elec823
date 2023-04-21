@@ -34,7 +34,8 @@ class WordConfidence(nn.Module):
         super(WordConfidence, self).__init__()
         self.asr_model = nemo_asr.models.EncDecRNNTBPEModel.from_pretrained(
             "nvidia/stt_en_conformer_transducer_xlarge"
-        )    # Freeze ASR model
+        )    
+        # Freeze ASR model
         for param in self.asr_model.parameters():
             param.requires_grad = False
 
@@ -47,18 +48,29 @@ class WordConfidence(nn.Module):
         )
         self.mapping = MappingLayer()
 
-    def forward(self, speech_input, meta_data):
+    def forward(self, speech_l, speech_r, meta_data):
         # output of asr model is [B, word_len]
         mono_path = meta_data["path"]
-        confidence, _ = self.asr_model.transcribe(
-            paths2audio_files=mono_path, return_hypotheses=True, batch_size=32
+        confidence_l, _ = self.asr_model.transcribe(
+            paths2audio_files=mono_path[0], return_hypotheses=True, batch_size=32
         )
-        confidence = [confidence[i].word_confidence for i in range(len(confidence))]
+        confidence_r, _ = self.asr_model.transcribe(
+            paths2audio_files=mono_path[1], return_hypotheses=True, batch_size=32
+        )
+        confidence_l = [confidence_l[i].word_confidence for i in range(len(confidence_l))]
+        confidence_r = [confidence_r[i].word_confidence for i in range(len(confidence_r))]
         # padding and truncating to 10: output shape [B, 10]
-        confidence = torch.stack(
-            list(map(self.truncate_and_pad, confidence)), dim=0
+        confidence_l = torch.stack(
+            list(map(self.truncate_and_pad, confidence_l)), dim=0
         ).to(device)
-        pred = self.mapping(self.predictor(confidence))
+        confidence_r = torch.stack(
+            list(map(self.truncate_and_pad, confidence_r)), dim=0
+        ).to(device)
+        pred_l = self.mapping(self.predictor(confidence_l))
+        pred_r = self.mapping(self.predictor(confidence_r))
+        
+        # Better ear and mapping
+        pred = self.mapping(self.better_ear(pred_l, pred_r))
 
         return pred
 
