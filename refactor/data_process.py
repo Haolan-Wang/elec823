@@ -217,10 +217,13 @@ class ListenerInfo:
         with open(CONSTANTS.AUDIOGRAM_PATH, "r") as file:
             audiogram_data = json.load(file)
         # audiogram: a 16-item list
-        info["audiogram"] = [
-            *audiogram_data[listener]["audiogram_levels_l"],
-            *audiogram_data[listener]["audiogram_levels_r"],
+        info["audiogram_l"] = [
+            *audiogram_data[listener]["audiogram_levels_l"]
         ]
+        info["audiogram_r"] = [
+            *audiogram_data[listener]["audiogram_levels_r"]
+        ]
+        info["audiogram_cfs"] = [*audiogram_data[listener]["audiogram_cfs"]]
 
         return info
 

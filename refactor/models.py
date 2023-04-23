@@ -1,8 +1,8 @@
 import nemo.collections.asr as nemo_asr
 from torch import nn
-
+from data_process import ListenerInfo
 from utils import *
-
+from interpolate import get_interpolated_audiogram
 CONSTANTS = InitializationTrain(verbose=False)
 device = CONSTANTS.device
 
@@ -47,6 +47,7 @@ class WordConfidence(nn.Module):
             nn.Linear(in_features=256, out_features=1),
         )
         self.mapping = MappingLayer()
+        self.better_ear = BetterEar()
 
     def forward(self, speech_l, speech_r, meta_data):
         # output of asr model is [B, word_len]
@@ -70,7 +71,9 @@ class WordConfidence(nn.Module):
         pred_r = self.mapping(self.predictor(confidence_r))
         
         # Better ear and mapping
-        pred = self.mapping(self.better_ear(pred_l, pred_r))
+        avg_pred = (pred_l + pred_r) / 2
+        pred = self.mapping(avg_pred)
+        # pred = self.mapping(self.better_ear(pred_l, pred_r))
 
         return pred
 
@@ -136,60 +139,82 @@ class EncoderPredictor(nn.Module):
         pred_l = self.predictor(encoded_l.contiguous().view(-1, 512 * 151))
         pred_r = self.predictor(encoded_r.contiguous().view(-1, 512 * 151))
         
-        # Better ear and mapping
-        pred = self.mapping(self.better_ear(pred_l, pred_r))
+        # Better ear and mapping self.better_ear(pred_l, pred_r)
+        avg_pred = (pred_l + pred_r) / 2
+        pred = self.mapping(avg_pred)
 
         return pred
     
-class WordConfidenceSigmoid(nn.Module):
-    """Word confidence model: Conformer + Linear predictor + exp mapping
-        input(_, _, mono_path)
-    """
-
+class EncoderPredictorHI(nn.Module):
     def __init__(self):
-        super(WordConfidenceSigmoid, self).__init__()
-        self.asr_model = nemo_asr.models.EncDecRNNTBPEModel.from_pretrained(
-            "nvidia/stt_en_conformer_transducer_xlarge"
-        )    # Freeze ASR model
-        for param in self.asr_model.parameters():
-            param.requires_grad = False
-
+        super(EncoderPredictorHI, self).__init__()
+        pretrained_model = nemo_asr.models.EncDecCTCModel.from_pretrained(
+            "nvidia/stt_en_conformer_ctc_large"
+        )
+        self.logmel = pretrained_model.preprocessor
+        self.hearing_impairment = nn.Sequential(
+            nn.Conv1d(80, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv1d(64, 80, kernel_size=3, stride=1, padding=1),
+            nn.ReLU()
+        )
+        self.conformer_encoder = pretrained_model.encoder
         self.predictor = nn.Sequential(
-            nn.Linear(in_features=10, out_features=512),
+            nn.Linear(in_features=512 * 151, out_features=256),
             nn.ReLU(),
-            nn.Linear(in_features=512, out_features=256),
+            nn.Linear(in_features=256, out_features=128),
             nn.ReLU(),
-            nn.Linear(in_features=256, out_features=1),
-            nn.Sigmoid(),
+            nn.Linear(in_features=128, out_features=1)
         )
+        self.mapping = MappingLayer()
+        self.better_ear = BetterEar()
 
-    def forward(self, speech_input, meta_data):
-        # output of asr model is [B, word_len]
-        mono_path = meta_data["path"]
-        confidence, _ = self.asr_model.transcribe(
-            paths2audio_files=mono_path, return_hypotheses=True, batch_size=32
+    def forward(self, speech_l, speech_r, meta_data):
+        # left and right [batch_size, 96000]
+        listener_info = ListenerInfo(meta_data['listener'])
+        audiogram_l = [listener_info.info[i]['audiogram_l'] for i in range(len(listener_info.info))]
+        audiogram_r = [listener_info.info[i]['audiogram_r'] for i in range(len(listener_info.info))]
+        audiogram_cfs = [listener_info.info[i]['audiogram_cfs'] for i in range(len(listener_info.info))]
+        
+        interpolated_audiogram_l = get_interpolated_audiogram(audiogram_l, audiogram_cfs)
+        interpolated_audiogram_r = get_interpolated_audiogram(audiogram_r, audiogram_cfs)
+        interpolated_audiogram_l = torch.tensor(interpolated_audiogram_l).to(device)
+        interpolated_audiogram_r = torch.tensor(interpolated_audiogram_r).to(device)
+        # interpolated_audiogram: [B, 80] 
+        # Repeat to [B, 80, 608]
+        interpolated_audiogram_l = interpolated_audiogram_l.unsqueeze(-1).repeat(1, 1, 160)
+        interpolated_audiogram_r = interpolated_audiogram_r.unsqueeze(-1).repeat(1, 1, 160)
+        # impaired_feature: [B, 80, 608]
+        impaired_feature_l = self.hearing_impairment(interpolated_audiogram_l)
+        impaired_feature_r = self.hearing_impairment(interpolated_audiogram_r)
+        
+        # mel_out: [B, 80, 608]
+        mel_feature_l, mel_feature_length = self.logmel(
+            input_signal=speech_l.to(device),
+            length=torch.full((speech_l.shape[0],), speech_l.shape[1]).to(device),
         )
-        confidence = [confidence[i].word_confidence for i in range(len(confidence))]
-        # padding and truncating to 10: output shape [B, 10]
-        confidence = torch.stack(
-            list(map(self.truncate_and_pad, confidence)), dim=0
-        ).to(device)
-        pred = self.predictor(confidence)
+        mel_feature_r, mel_feature_length = self.logmel(
+            input_signal=speech_r.to(device),
+            length=torch.full((speech_r.shape[0],), speech_r.shape[1]).to(device),
+        )
+        mel_feature_l = mel_feature_l * impaired_feature_l
+        mel_feature_r = mel_feature_r * impaired_feature_r
+        
+        encoded_l, encoder_length = self.conformer_encoder(
+            audio_signal=mel_feature_l.to(device),
+            length=torch.full((mel_feature_l.shape[0],), mel_feature_l.shape[2]).to(device),
+        )
+        encoded_r, encoder_length = self.conformer_encoder(
+            audio_signal=mel_feature_r.to(device),
+            length=torch.full((mel_feature_r.shape[0],), mel_feature_r.shape[2]).to(device),
+        )
+        
+        # encoder out : [32, 512, 151]
+        pred_l = self.predictor(encoded_l.contiguous().view(-1, 512 * 151))
+        pred_r = self.predictor(encoded_r.contiguous().view(-1, 512 * 151))
+        
+        # Better ear and mapping self.better_ear(pred_l, pred_r)
+        avg_pred = (pred_l + pred_r) / 2
+        pred = self.mapping(avg_pred)
 
         return pred
-
-    def truncate_and_pad(self, tensor):
-        FIXED_LENGTH = 10
-        if type(tensor) is not torch.Tensor:
-            tensor = torch.tensor(tensor)
-        current_length = tensor.size(0)
-
-        # If the tensor length is greater than the target length, truncate it
-        if current_length > FIXED_LENGTH:
-            tensor = tensor[:FIXED_LENGTH]
-        # If the tensor length is less than the target length, pad it with zeros
-        elif current_length < FIXED_LENGTH:
-            pad_size = FIXED_LENGTH - current_length
-            padding = torch.zeros(pad_size, dtype=tensor.dtype, device=tensor.device)
-            tensor = torch.cat((tensor, padding), dim=0)
-        return tensor   

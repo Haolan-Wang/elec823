@@ -102,10 +102,11 @@ def train_binaural(model, dataset, CONSTANTS,
                 val_loss = 0
                 val_scores = torch.zeros(0)  # .to(device)
                 val_preds = torch.zeros(0)  # .to(device)
-                for speech_input_l, info_dict in tqdm(val_loader, desc="Validation:"):
+                for speech_input_l, speech_input_r, info_dict in tqdm(val_loader, desc="Validation:"):
                     speech_input_l = speech_input_l.to(device)
+                    speech_input_r = speech_input_r.to(device)
                     score = info_dict["score"].to(torch.float32).to(device)
-                    pred = model(speech_input_l, info_dict)
+                    pred = model(speech_input_l, speech_input_r, info_dict)
                     pred = torch.squeeze(pred)
                     if score.shape != pred.shape:
                         pred = pred.reshape_as(score)
@@ -185,21 +186,24 @@ def train_binaural(model, dataset, CONSTANTS,
 if __name__ == "__main__":
     
     # WordConfidence============================
-    # MODEL = 'WordConfidence_05'
-    # model = WordConfidence().to(device)
-    # 01: MSEPearson
-    # 01.1: MSE Rerun
-    # 02: MSE
-    # 03: MSEConcordanceLoss
-    # 04: sigmoid + MSEPearsonLoss
-    # 05: MSEPearsonConcordanceLoss lr = 1e-4
+    MODEL = 'WordConfidence_01'
+    model = WordConfidence().to(device)
+    # 01: MSE BE lr = 1e-3
+    # 02: MSEPearsonLoss BE lr = 1e-3
+    # 03: MSEPearsonLoss BE lr = 1e-4
     
-    # EncoderPredictor==========================
-    MODEL = 'EncoderPredictor_01'
-    model = EncoderPredictor().to(device)
+    
+    #==========================
+    # EncoderPredictor
+    # MODEL = 'EncoderPredictor_07'
+    # model = EncoderPredictor().to(device)
     # 01: MSE lr = 1e-4
-    # 05: MSEConcordanceLoss lr = 1e-4
-    # 06: MSEPearsonConcordanceLoss lr = 1e-3
+    # 02: MSEPearsonLoss BE lr = 1e-4
+    # 03: MSEPearsonLoss BE lr = 1e-3
+    # 04: MSEPearsonLoss BE lr = 1e-2
+    # 05: MSE avg lr = 1e-3
+    # 06: MSEPearsonLoss avg lr = 1e-3
+    # 07: MSEPearsonLoss avg lr = 1e-4
     
     CONSTANTS = InitializationTrain(
         model_name=MODEL,
@@ -213,5 +217,8 @@ if __name__ == "__main__":
         CONSTANTS=CONSTANTS,
         batch_size=16,
         lr=1e-4,
-        criterion=MyMSELoss()
+        num_epochs=20,
+        patience=3,
+        tolerance=0.05,
+        criterion=MSEPearsonLoss()
     )
