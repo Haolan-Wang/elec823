@@ -153,7 +153,7 @@ class EncoderPredictorHI(nn.Module):
         )
         self.logmel = pretrained_model.preprocessor
         self.hearing_impairment = nn.Sequential(
-            nn.Conv1d(80, 64, kernel_size=3, stride=1, padding=1),
+            nn.Conv1d(160, 64, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Conv1d(64, 80, kernel_size=3, stride=1, padding=1),
             nn.ReLU()
@@ -178,15 +178,12 @@ class EncoderPredictorHI(nn.Module):
         
         interpolated_audiogram_l = get_interpolated_audiogram(audiogram_l, audiogram_cfs)
         interpolated_audiogram_r = get_interpolated_audiogram(audiogram_r, audiogram_cfs)
-        interpolated_audiogram_l = torch.tensor(interpolated_audiogram_l).to(device)
-        interpolated_audiogram_r = torch.tensor(interpolated_audiogram_r).to(device)
+        interpolated_audiogram_l = torch.tensor(interpolated_audiogram_l, dtype=torch.float).to(device)
+        interpolated_audiogram_r = torch.tensor(interpolated_audiogram_r, dtype=torch.float).to(device)
         # interpolated_audiogram: [B, 80] 
         # Repeat to [B, 80, 608]
-        interpolated_audiogram_l = interpolated_audiogram_l.unsqueeze(-1).repeat(1, 1, 160)
-        interpolated_audiogram_r = interpolated_audiogram_r.unsqueeze(-1).repeat(1, 1, 160)
-        # impaired_feature: [B, 80, 608]
-        impaired_feature_l = self.hearing_impairment(interpolated_audiogram_l)
-        impaired_feature_r = self.hearing_impairment(interpolated_audiogram_r)
+        interpolated_audiogram_l = interpolated_audiogram_l.unsqueeze(-1).repeat(1, 1, 601)
+        interpolated_audiogram_r = interpolated_audiogram_r.unsqueeze(-1).repeat(1, 1, 601)
         
         # mel_out: [B, 80, 608]
         mel_feature_l, mel_feature_length = self.logmel(
@@ -197,16 +194,20 @@ class EncoderPredictorHI(nn.Module):
             input_signal=speech_r.to(device),
             length=torch.full((speech_r.shape[0],), speech_r.shape[1]).to(device),
         )
-        mel_feature_l = mel_feature_l * impaired_feature_l
-        mel_feature_r = mel_feature_r * impaired_feature_r
+        concat_mel_feature_l = torch.cat((mel_feature_l, interpolated_audiogram_l), dim=1) # [B, 160, 608]
+        concat_mel_feature_r = torch.cat((mel_feature_r, interpolated_audiogram_r), dim=1)
+        
+        # impaired_feature: [B, 80, 608]
+        impaired_feature_l = self.hearing_impairment(concat_mel_feature_l)
+        impaired_feature_r = self.hearing_impairment(concat_mel_feature_r)
         
         encoded_l, encoder_length = self.conformer_encoder(
-            audio_signal=mel_feature_l.to(device),
-            length=torch.full((mel_feature_l.shape[0],), mel_feature_l.shape[2]).to(device),
+            audio_signal=impaired_feature_l.to(device),
+            length=torch.full((impaired_feature_l.shape[0],), impaired_feature_l.shape[2]).to(device),
         )
         encoded_r, encoder_length = self.conformer_encoder(
-            audio_signal=mel_feature_r.to(device),
-            length=torch.full((mel_feature_r.shape[0],), mel_feature_r.shape[2]).to(device),
+            audio_signal=impaired_feature_r.to(device),
+            length=torch.full((impaired_feature_r.shape[0],), impaired_feature_r.shape[2]).to(device),
         )
         
         # encoder out : [32, 512, 151]

@@ -31,7 +31,7 @@ def get_interpolated_audiogram(
     """return: list of interpolated audiogram values"""
     interpolated_audiogram = []
     filter_cfs = get_central_frequencies(num_filter, lowfreq, highfreq)
-    for i in audiogram:
+    for i in range(len(audiogram)):
         interpolated_audiogram.append(lagrange_interpolate(audiogram[i], audiogram_cfs[i], filter_cfs))
     
     return interpolated_audiogram

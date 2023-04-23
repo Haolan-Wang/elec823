@@ -184,16 +184,16 @@ def train_binaural(model, dataset, CONSTANTS,
 
 
 if __name__ == "__main__":
+    # ===========================================
+    # WordConfidence
+    # MODEL = 'WordConfidence_03'
+    # model = WordConfidence().to(device)
+    # 01: MSE avg lr = 1e-3
+    # 02: MSEPearsonLoss avg lr = 1e-3
+    # 03: MSEPearsonLoss avg lr = 1e-4
     
-    # WordConfidence============================
-    MODEL = 'WordConfidence_01'
-    model = WordConfidence().to(device)
-    # 01: MSE BE lr = 1e-3
-    # 02: MSEPearsonLoss BE lr = 1e-3
-    # 03: MSEPearsonLoss BE lr = 1e-4
     
-    
-    #==========================
+    # ===========================================
     # EncoderPredictor
     # MODEL = 'EncoderPredictor_07'
     # model = EncoderPredictor().to(device)
@@ -203,7 +203,17 @@ if __name__ == "__main__":
     # 04: MSEPearsonLoss BE lr = 1e-2
     # 05: MSE avg lr = 1e-3
     # 06: MSEPearsonLoss avg lr = 1e-3
-    # 07: MSEPearsonLoss avg lr = 1e-4
+    # 07: MSEPearsonLoss avg lr = 1e-4 This one is good
+    
+    
+    # ===========================================
+    # EncoderPredictorHI
+    # 01: MSE lr = 1e-4
+    # 02: MSE lr = 1e-5
+    # 03: MSEPearsonLoss lr = 1e-5
+    # 04: MSEPearsonLoss lr = 1e-6
+    MODEL = 'EncoderPredictorHI_01'
+    model = EncoderPredictorHI().to(device)
     
     CONSTANTS = InitializationTrain(
         model_name=MODEL,
@@ -218,7 +228,7 @@ if __name__ == "__main__":
         batch_size=16,
         lr=1e-4,
         num_epochs=20,
-        patience=3,
+        patience=2,
         tolerance=0.05,
-        criterion=MSEPearsonLoss()
+        criterion=MyMSELoss()
     )

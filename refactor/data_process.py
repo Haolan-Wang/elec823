@@ -232,3 +232,12 @@ class ListenerInfo:
         for listener in listeners:
             infos.append(self.get_info(listener))
         return infos
+
+
+class HurricaneData(Dataset):
+    def __init__(self, metadata, augmentation=None):
+        self.metadata = metadata
+        self.augmentation = augmentation
+        self.resampler = torchaudio.transforms.Resample(
+            orig_freq=CONSTANTS.orig_freq, new_freq=CONSTANTS.new_freq
+        )
