@@ -1,10 +1,11 @@
 import openpyxl
 from collections import OrderedDict
+import scipy.io
 
 import torchaudio
 from torch.utils.data import Dataset
 from utils import *
-
+import re
 CONSTANTS = InitializationTrain()
 
 
@@ -235,9 +236,104 @@ class ListenerInfo:
 
 
 class HurricaneData(Dataset):
-    def __init__(self, metadata, augmentation=None):
-        self.metadata = metadata
-        self.augmentation = augmentation
-        self.resampler = torchaudio.transforms.Resample(
-            orig_freq=CONSTANTS.orig_freq, new_freq=CONSTANTS.new_freq
-        )
+    def __init__(self, root_dir='/home/ubuntu/elec823/hurricane', transform=None):
+        self.root_dir = root_dir
+        self.transform = transform
+        self.scores = scipy.io.loadmat(os.path.join(root_dir, 'scores.mat'))['intell']
+        self.samples = []
+        self.noise_types = {"cs":0, "ssn":1}
+        self.snrs = {"snrHi":0, "snrMid":1, "snrLo":2}
+
+        for mod_folder in os.listdir(root_dir):
+            if mod_folder.startswith("."):
+                continue
+            ssn_path = os.path.join(root_dir, mod_folder, 'ssn')
+            if not os.path.isdir(ssn_path):
+                continue
+            for snr in os.listdir(ssn_path):
+                if snr.startswith("."):
+                    continue
+                snr_path = os.path.join(ssn_path, snr)
+                for audio_file in os.listdir(snr_path):
+                    audio_path = os.path.join(snr_path, audio_file)
+                    self.samples.append(audio_path)
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        audio_path = self.samples[idx]
+        split_str = audio_path.split('/')
+        output = [split_str[-4], split_str[-3], split_str[-2], split_str[-1].split('_')[-1].split('.')[0]]
+        numbers = int(''.join(re.findall(r'\d+', output[0])))
+        noise_type = self.noise_types[output[1]]
+        snr = self.snrs[output[2]]
+        utt = int(output[3])
+        score = self.scores[numbers-1][noise_type][snr][utt-1]
+        
+        waveform, sample_rate = torchaudio.load(audio_path)
+        waveform = torch.mean(waveform, dim=0)
+        
+        # Pad or trim the audio to 6 seconds
+        desired_length = sample_rate * 6  # keep 6 seconds
+        if waveform.size(-1) < desired_length:
+            padding = desired_length - waveform.size(-1)
+            waveform = torch.nn.functional.pad(waveform, (0, padding), "constant")
+        elif waveform.size(-1) > desired_length:
+            waveform = waveform[..., :desired_length]
+        # if self.transform:
+        #     waveform = self.transform(waveform)
+
+        return waveform, score
+
+
+class HurricaneTrain(Dataset):
+    def __init__(self, root_dir='/home/ubuntu/elec823/hurricane', transform=None):
+        self.root_dir = root_dir
+        self.transform = transform
+        self.scores = scipy.io.loadmat(os.path.join(root_dir, 'scores.mat'))['intell']
+        self.samples = []
+        self.noise_types = {"cs":0, "ssn":1}
+        self.snrs = {"snrHi":0, "snrMid":1, "snrLo":2}
+
+        for mod_folder in os.listdir(root_dir):
+            if mod_folder.startswith("."):
+                continue
+            ssn_path = os.path.join(root_dir, mod_folder, 'ssn')
+            if not os.path.isdir(ssn_path):
+                continue
+            for snr in os.listdir(ssn_path):
+                if snr.startswith("."):
+                    continue
+                snr_path = os.path.join(ssn_path, snr)
+                for audio_file in os.listdir(snr_path):
+                    audio_path = os.path.join(snr_path, audio_file)
+                    self.samples.append(audio_path)
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        audio_path = self.samples[idx]
+        split_str = audio_path.split('/')
+        output = [split_str[-4], split_str[-3], split_str[-2], split_str[-1].split('_')[-1].split('.')[0]]
+        numbers = int(''.join(re.findall(r'\d+', output[0])))
+        noise_type = self.noise_types[output[1]]
+        snr = self.snrs[output[2]]
+        utt = int(output[3])
+        score = self.scores[numbers-1][noise_type][snr][utt-1]
+        
+        waveform, sample_rate = torchaudio.load(audio_path)
+        waveform = torch.mean(waveform, dim=0)
+        
+        # Pad or trim the audio to 6 seconds
+        desired_length = sample_rate * 6  # keep 6 seconds
+        if waveform.size(-1) < desired_length:
+            padding = desired_length - waveform.size(-1)
+            waveform = torch.nn.functional.pad(waveform, (0, padding), "constant")
+        elif waveform.size(-1) > desired_length:
+            waveform = waveform[..., :desired_length]
+        # if self.transform:
+        #     waveform = self.transform(waveform)
+
+        return waveform, score

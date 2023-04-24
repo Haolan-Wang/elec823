@@ -25,6 +25,52 @@ class BetterEar(nn.Module):
     def forward(self, x, y):
         return self.a * x + self.b * y
 
+import torch
+import torch.nn as nn
+
+class HearingImpairment(nn.Module):
+    """Input: (batch_size, 160, 608)
+        Output: (batch_size, 512, 151)
+    """
+    def __init__(self):
+        super(HearingImpairment, self).__init__()
+        
+        self.conv1 = nn.Sequential(
+            nn.Conv1d(160, 32, kernel_size=7, stride=2, padding=3),
+            nn.ReLU(),
+            nn.BatchNorm1d(32),
+            nn.MaxPool1d(kernel_size=2, stride=2)
+        )
+        
+        self.conv2 = nn.Sequential(
+            nn.Conv1d(32, 64, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.BatchNorm1d(64),
+            nn.MaxPool1d(kernel_size=2, stride=2)
+        )
+        
+        self.conv3 = nn.Sequential(
+            nn.Conv1d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.BatchNorm1d(128),
+            nn.MaxPool1d(kernel_size=2, stride=2)
+        )
+        
+        self.fc = nn.Sequential(
+            nn.Linear(128 * 37, 512),
+            nn.ReLU(),
+        )
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        
+        x = x.view(x.size(0), -1)  # Flatten
+        x = self.fc(x)
+        
+        return x.unsqueeze(-1).repeat(1, 1, 151)
+
 class WordConfidence(nn.Module):
     """Word confidence model: Conformer + Linear predictor + exp mapping
         input(_, _, mono_path)
@@ -145,6 +191,7 @@ class EncoderPredictor(nn.Module):
 
         return pred
     
+
 class EncoderPredictorHI(nn.Module):
     def __init__(self):
         super(EncoderPredictorHI, self).__init__()
@@ -216,6 +263,152 @@ class EncoderPredictorHI(nn.Module):
         
         # Better ear and mapping self.better_ear(pred_l, pred_r)
         avg_pred = (pred_l + pred_r) / 2
-        pred = self.mapping(avg_pred)
+        # pred = self.mapping(avg_pred)
+
+        return avg_pred
+    
+    
+class EncoderPredictorHI_v2(nn.Module):
+    """
+        The interference of hearing loss acts on encoded features.
+    """
+    def __init__(self):
+        super(EncoderPredictorHI_v2, self).__init__()
+        pretrained_model = nemo_asr.models.EncDecCTCModel.from_pretrained(
+            "nvidia/stt_en_conformer_ctc_large"
+        )
+        self.logmel = pretrained_model.preprocessor
+        self.hearing_impairment = nn.Sequential(
+            nn.Conv1d(160, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv1d(64, 80, kernel_size=3, stride=1, padding=1),
+            nn.ReLU()
+        )
+        self.conformer_encoder = pretrained_model.encoder
+        self.predictor = nn.Sequential(
+            nn.Linear(in_features=1184 * 151, out_features=256),
+            nn.ReLU(),
+            nn.Linear(in_features=256, out_features=128),
+            nn.ReLU(),
+            nn.Linear(in_features=128, out_features=1)
+        )
+        self.mapping = MappingLayer()
+        self.better_ear = BetterEar()
+
+    def forward(self, speech_l, speech_r, meta_data):
+        # left and right [batch_size, 96000]
+        listener_info = ListenerInfo(meta_data['listener'])
+        audiogram_l = [listener_info.info[i]['audiogram_l'] for i in range(len(listener_info.info))]
+        audiogram_r = [listener_info.info[i]['audiogram_r'] for i in range(len(listener_info.info))]
+        audiogram_cfs = [listener_info.info[i]['audiogram_cfs'] for i in range(len(listener_info.info))]
+        
+        interpolated_audiogram_l = get_interpolated_audiogram(audiogram_l, audiogram_cfs)
+        interpolated_audiogram_r = get_interpolated_audiogram(audiogram_r, audiogram_cfs)
+        interpolated_audiogram_l = torch.tensor(interpolated_audiogram_l, dtype=torch.float).to(device)
+        interpolated_audiogram_r = torch.tensor(interpolated_audiogram_r, dtype=torch.float).to(device)
+        # interpolated_audiogram: [B, 80] 
+        # Repeat to [B, 80, 151]
+        interpolated_audiogram_l = interpolated_audiogram_l.unsqueeze(-1).repeat(1, 1, 151)
+        interpolated_audiogram_r = interpolated_audiogram_r.unsqueeze(-1).repeat(1, 1, 151)
+        
+        # mel_out: [B, 80, 601]
+        mel_feature_l, mel_feature_length = self.logmel(
+            input_signal=speech_l.to(device),
+            length=torch.full((speech_l.shape[0],), speech_l.shape[1]).to(device),
+        )
+        mel_feature_r, mel_feature_length = self.logmel(
+            input_signal=speech_r.to(device),
+            length=torch.full((speech_r.shape[0],), speech_r.shape[1]).to(device),
+        )
+        
+        encoded_l, encoder_length = self.conformer_encoder(
+            audio_signal=mel_feature_l.to(device),
+            length=torch.full((mel_feature_l.shape[0],), mel_feature_l.shape[2]).to(device),
+        )
+        encoded_r, encoder_length = self.conformer_encoder(
+            audio_signal=mel_feature_r.to(device),
+            length=torch.full((mel_feature_r.shape[0],), mel_feature_r.shape[2]).to(device),
+        )
+        # encoder out : [B, 512, 151]
+        concatenated_l = torch.cat((encoded_l, interpolated_audiogram_l), dim=1)
+        concatenated_r = torch.cat((encoded_r, interpolated_audiogram_r), dim=1)
+        # [B, 592, 151] -> [B, 1184, 151]
+        con_features = torch.cat((concatenated_l, concatenated_r), dim=1)
+        pred = self.predictor(con_features.contiguous().view(-1, 1184 * 151))
+        # pred_l = self.predictor(concatenated_l.contiguous().view(-1, 592 * 151))
+        # pred_r = self.predictor(concatenated_r.contiguous().view(-1, 592 * 151))
+        
+        # Better ear and mapping self.better_ear(pred_l, pred_r)
+        # avg_pred = (pred_l + pred_r) / 2
+        pred = self.mapping(pred)
+
+        return pred
+    
+    
+class EncoderPredictorHI_v3(nn.Module):
+    def __init__(self):
+        super(EncoderPredictorHI_v3, self).__init__()
+        pretrained_model = nemo_asr.models.EncDecCTCModel.from_pretrained(
+            "nvidia/stt_en_conformer_ctc_large"
+        )
+        self.logmel = pretrained_model.preprocessor
+        self.hearing_impairment = HearingImpairment()
+        self.conformer_encoder = pretrained_model.encoder
+        self.predictor = nn.Sequential(
+            nn.Linear(in_features=2048 * 151, out_features=256),
+            nn.ReLU(),
+            nn.Linear(in_features=256, out_features=128),
+            nn.ReLU(),
+            nn.Linear(in_features=128, out_features=1)
+        )
+        self.mapping = MappingLayer()
+        self.better_ear = BetterEar()
+
+    def forward(self, speech_l, speech_r, meta_data):
+        # left and right [batch_size, 96000]
+        listener_info = ListenerInfo(meta_data['listener'])
+        audiogram_l = [listener_info.info[i]['audiogram_l'] for i in range(len(listener_info.info))]
+        audiogram_r = [listener_info.info[i]['audiogram_r'] for i in range(len(listener_info.info))]
+        audiogram_cfs = [listener_info.info[i]['audiogram_cfs'] for i in range(len(listener_info.info))]
+        
+        interpolated_audiogram_l = get_interpolated_audiogram(audiogram_l, audiogram_cfs)
+        interpolated_audiogram_r = get_interpolated_audiogram(audiogram_r, audiogram_cfs)
+        interpolated_audiogram_l = torch.tensor(interpolated_audiogram_l, dtype=torch.float).to(device)
+        interpolated_audiogram_r = torch.tensor(interpolated_audiogram_r, dtype=torch.float).to(device)
+        # interpolated_audiogram: [B, 80] 
+        # Repeat to [B, 80, 608]
+        interpolated_audiogram_l = interpolated_audiogram_l.unsqueeze(-1).repeat(1, 1, 601)
+        interpolated_audiogram_r = interpolated_audiogram_r.unsqueeze(-1).repeat(1, 1, 601)
+        
+        # mel_out: [B, 80, 608]
+        mel_feature_l, mel_feature_length = self.logmel(
+            input_signal=speech_l.to(device),
+            length=torch.full((speech_l.shape[0],), speech_l.shape[1]).to(device),
+        )
+        mel_feature_r, mel_feature_length = self.logmel(
+            input_signal=speech_r.to(device),
+            length=torch.full((speech_r.shape[0],), speech_r.shape[1]).to(device),
+        )
+        # encoder out : [B, 512, 151]
+        encoded_l, encoder_length = self.conformer_encoder(
+            audio_signal=mel_feature_l.to(device),
+            length=torch.full((mel_feature_l.shape[0],), mel_feature_l.shape[2]).to(device),
+        )
+        encoded_r, encoder_length = self.conformer_encoder(
+            audio_signal=mel_feature_r.to(device),
+            length=torch.full((mel_feature_r.shape[0],), mel_feature_r.shape[2]).to(device),
+        )
+        
+        concat_mel_feature_l = torch.cat((mel_feature_l, interpolated_audiogram_l), dim=1) # [B, 160, 608]
+        concat_mel_feature_r = torch.cat((mel_feature_r, interpolated_audiogram_r), dim=1)
+        # impaired_feature: [B, 512, 151]
+        impaired_feature_l = self.hearing_impairment(concat_mel_feature_l)
+        impaired_feature_r = self.hearing_impairment(concat_mel_feature_r)
+        
+        # [encoded_l, impaired_feature_l, encoded_r, impaired_feature_r] -> [B, 2048, 151
+        concat_feature = torch.cat((encoded_l, impaired_feature_l, encoded_r, impaired_feature_r), dim=1) # [B, 2048, 151]
+        pred = self.predictor(concat_feature.contiguous().view(-1, 2048 * 151))
+
+        pred = self.mapping(pred)
 
         return pred

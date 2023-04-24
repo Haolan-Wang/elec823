@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.interpolate import lagrange
+from scipy.interpolate import lagrange, interp1d
 
 def mel_to_hz(mel):
     return 700 * (10**(mel / 2595) - 1)
@@ -8,7 +8,8 @@ def hz_to_mel(hz):
     return 2595 * np.log10(1 + hz / 700)
 
 def lagrange_interpolate(audiogram, audiogram_cfs, filter_cfs):
-    lagrange_poly = lagrange(audiogram, audiogram_cfs)
+    # lagrange_poly = lagrange(audiogram_cfs, audiogram)
+    lagrange_poly = interp1d(audiogram_cfs, audiogram, bounds_error=False, fill_value="extrapolate")
     return lagrange_poly(filter_cfs)
 
 def get_central_frequencies(num_filter, lowfreq, highfreq):

@@ -146,6 +146,9 @@ def train_binaural(model, dataset, CONSTANTS,
 
             # del train_loss, train_error, val_error
             # torch.cuda.empty_cache()
+            # if np.isnan(train_loss):
+            #     print("Training loss is NaN. Stop training.")
+            #     break
             with open(CONSTANTS.last_output + f'{CONSTANTS.MODEL_NAME}_val.txt', mode='w') as f:
                 f.write("Score, Predict\n")
                 for i in range(len(val_scores)):
@@ -210,10 +213,26 @@ if __name__ == "__main__":
     # EncoderPredictorHI
     # 01: MSE lr = 1e-4
     # 02: MSE lr = 1e-5
-    # 03: MSEPearsonLoss lr = 1e-5
-    # 04: MSEPearsonLoss lr = 1e-6
-    MODEL = 'EncoderPredictorHI_01'
-    model = EncoderPredictorHI().to(device)
+    # 03: MSEPearsonLoss lr = 1e-4
+    # 04: MSEPearsonLoss lr = 1e-3
+    # 05: MSEPearsonLoss lr = 1e-5
+    
+    # ===========================================
+    # EncoderPredictorHI_v2
+    # 01: MSE lr = 1e-4 
+    # 02: MSE lr = 1e-5
+    # 03: MSEPearsonLoss lr = 1e-4
+    # 04: MSEPearsonLoss lr = 1e-3
+    # 05: MSEPearsonLoss lr = 1e-5
+    
+    # ===========================================
+    # EncoderPredictorHI_v3
+    # 01: MSEPearsonLoss lr = 1e-4
+    # 02: MSEPearsonLoss lr = 1e-5
+    # 03: MSE lr = 1e-4
+    
+    MODEL = 'EncoderPredictorHI_v3_03'
+    model = EncoderPredictorHI_v3().to(device)
     
     CONSTANTS = InitializationTrain(
         model_name=MODEL,
@@ -227,8 +246,8 @@ if __name__ == "__main__":
         CONSTANTS=CONSTANTS,
         batch_size=16,
         lr=1e-4,
-        num_epochs=20,
-        patience=2,
+        num_epochs=10,
+        patience=3,
         tolerance=0.05,
         criterion=MyMSELoss()
     )

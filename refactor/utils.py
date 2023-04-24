@@ -70,7 +70,7 @@ class InitializationTrain:
 
         self.LOG_PATH = log_path + self.MODEL_NAME
         self.SAVE_PATH = save_path + self.MODEL_NAME
-        self.last_output = log_path + "last_output/"
+        self.last_output = "/home/ubuntu/elec823/last_output/"
         self.folder_names = [self.LOG_PATH, self.SAVE_PATH, self.last_output]
         for folder_name in self.folder_names:
             if not os.path.exists(folder_name):
