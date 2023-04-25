@@ -1,5 +1,7 @@
 import nemo.collections.asr as nemo_asr
+import torch
 from torch import nn
+import torch.nn as nn
 from data_process import ListenerInfo
 from utils import *
 from interpolate import get_interpolated_audiogram
@@ -16,6 +18,7 @@ class MappingLayer(nn.Module):
     def forward(self, x):
         return 1 / (1 + torch.exp(self.a * x + self.b))
 
+
 class BetterEar(nn.Module):
     def __init__(self):
         super(BetterEar, self).__init__()
@@ -25,8 +28,6 @@ class BetterEar(nn.Module):
     def forward(self, x, y):
         return self.a * x + self.b * y
 
-import torch
-import torch.nn as nn
 
 class HearingImpairment(nn.Module):
     """Input: (batch_size, 160, 608)
@@ -70,6 +71,7 @@ class HearingImpairment(nn.Module):
         x = self.fc(x)
         
         return x.unsqueeze(-1).repeat(1, 1, 151)
+
 
 class WordConfidence(nn.Module):
     """Word confidence model: Conformer + Linear predictor + exp mapping
@@ -140,6 +142,59 @@ class WordConfidence(nn.Module):
         return tensor
 
 
+class WordConfidenceHI_v1(nn.Module):
+    """Word confidence model: Conformer + Linear predictor + exp mapping
+        input(_, _, mono_path)
+    """
+
+    def __init__(self):
+        super(WordConfidence, self).__init__()
+        self.asr_model = nemo_asr.models.EncDecRNNTBPEModel.from_pretrained(
+            "nvidia/stt_en_conformer_transducer_xlarge"
+        )    
+        # Freeze ASR model
+        for param in self.asr_model.parameters():
+            param.requires_grad = False
+
+        self.predictor = nn.Sequential(
+            nn.Linear(in_features=10, out_features=512),
+            nn.ReLU(),
+            nn.Linear(in_features=512, out_features=256),
+            nn.ReLU(),
+            nn.Linear(in_features=256, out_features=1),
+        )
+        self.mapping = MappingLayer()
+        self.better_ear = BetterEar()
+
+    def forward(self, speech_l, speech_r, meta_data):
+        # output of asr model is [B, word_len]
+        mono_path = meta_data["path"]
+        confidence_l, _ = self.asr_model.transcribe(
+            paths2audio_files=mono_path[0], return_hypotheses=True, batch_size=32
+        )
+        confidence_r, _ = self.asr_model.transcribe(
+            paths2audio_files=mono_path[1], return_hypotheses=True, batch_size=32
+        )
+        confidence_l = [confidence_l[i].word_confidence for i in range(len(confidence_l))]
+        confidence_r = [confidence_r[i].word_confidence for i in range(len(confidence_r))]
+        # padding and truncating to 10: output shape [B, 10]
+        confidence_l = torch.stack(
+            list(map(self.truncate_and_pad, confidence_l)), dim=0
+        ).to(device)
+        confidence_r = torch.stack(
+            list(map(self.truncate_and_pad, confidence_r)), dim=0
+        ).to(device)
+        pred_l = self.mapping(self.predictor(confidence_l))
+        pred_r = self.mapping(self.predictor(confidence_r))
+        
+        # Better ear and mapping
+        avg_pred = (pred_l + pred_r) / 2
+        pred = self.mapping(avg_pred)
+        # pred = self.mapping(self.better_ear(pred_l, pred_r))
+
+        return pred
+     
+
 class EncoderPredictor(nn.Module):
     def __init__(self):
         super(EncoderPredictor, self).__init__()
@@ -181,7 +236,7 @@ class EncoderPredictor(nn.Module):
             length=torch.full((mel_feature_r.shape[0],), mel_feature_r.shape[2]).to(device),
         )
         
-        # encoder out : [32, 512, 151]
+        # encoder out : [B, 512, 151]
         pred_l = self.predictor(encoded_l.contiguous().view(-1, 512 * 151))
         pred_r = self.predictor(encoded_r.contiguous().view(-1, 512 * 151))
         
@@ -410,5 +465,80 @@ class EncoderPredictorHI_v3(nn.Module):
         pred = self.predictor(concat_feature.contiguous().view(-1, 2048 * 151))
 
         pred = self.mapping(pred)
+
+        return pred
+    
+
+class ConfidenceEncoder(nn.Module):
+    def __init__(self):
+        super(ConfidenceEncoder, self).__init__()
+        pretrained_model = nemo_asr.models.EncDecCTCModel.from_pretrained(
+            "nvidia/stt_en_conformer_ctc_large"
+        )
+        self.asr_model = nemo_asr.models.EncDecRNNTBPEModel.from_pretrained(
+            "nvidia/stt_en_conformer_transducer_xlarge"
+        )
+        # Freeze ASR model
+        for param in self.asr_model.parameters():
+            param.requires_grad = False
+        self.logmel = pretrained_model.preprocessor
+        self.conformer_encoder = pretrained_model.encoder
+        self.predictor = nn.Sequential(
+            nn.Linear(in_features=512 * 151, out_features=256),
+            nn.ReLU(),
+            nn.Linear(in_features=256, out_features=128),
+            nn.ReLU(),
+            nn.Linear(in_features=128, out_features=1)
+        )
+        self.mapping = MappingLayer()
+        self.better_ear = BetterEar()
+
+    def forward(self, speech_l, speech_r, meta_data):
+        # left and right [batch_size, 96000]
+        # mel_out: [3, 80, 608]
+        # speech_l = speech_input[0]
+        # speech_r = speech_input[1]
+        
+        mel_feature_l, mel_feature_length = self.logmel(
+            input_signal=speech_l.to(device),
+            length=torch.full((speech_l.shape[0],), speech_l.shape[1]).to(device),
+        )
+        mel_feature_r, mel_feature_length = self.logmel(
+            input_signal=speech_r.to(device),
+            length=torch.full((speech_r.shape[0],), speech_r.shape[1]).to(device),
+        )
+        encoded_l, encoder_length = self.conformer_encoder(
+            audio_signal=mel_feature_l.to(device),
+            length=torch.full((mel_feature_l.shape[0],), mel_feature_l.shape[2]).to(device),
+        )
+        encoded_r, encoder_length = self.conformer_encoder(
+            audio_signal=mel_feature_r.to(device),
+            length=torch.full((mel_feature_r.shape[0],), mel_feature_r.shape[2]).to(device),
+        )
+        # encoder out : [B, 512, 151]
+        
+        mono_path = meta_data["path"]
+        confidence_l, _ = self.asr_model.transcribe(
+            paths2audio_files=mono_path[0], return_hypotheses=True, batch_size=32
+        )
+        confidence_r, _ = self.asr_model.transcribe(
+            paths2audio_files=mono_path[1], return_hypotheses=True, batch_size=32
+        )
+        confidence_l = [confidence_l[i].word_confidence for i in range(len(confidence_l))]
+        confidence_r = [confidence_r[i].word_confidence for i in range(len(confidence_r))]
+        # padding and truncating to 10: output shape [B, 10]
+        confidence_l = torch.stack(
+            list(map(self.truncate_and_pad, confidence_l)), dim=0
+        ).to(device)
+        confidence_r = torch.stack(
+            list(map(self.truncate_and_pad, confidence_r)), dim=0
+        ).to(device)
+        
+        pred_l = self.predictor(encoded_l.contiguous().view(-1, 512 * 151))
+        pred_r = self.predictor(encoded_r.contiguous().view(-1, 512 * 151))
+        
+        # Better ear and mapping self.better_ear(pred_l, pred_r)
+        avg_pred = (pred_l + pred_r) / 2
+        pred = self.mapping(avg_pred)
 
         return pred

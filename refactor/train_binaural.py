@@ -230,9 +230,14 @@ if __name__ == "__main__":
     # 01: MSEPearsonLoss lr = 1e-4
     # 02: MSEPearsonLoss lr = 1e-5
     # 03: MSE lr = 1e-4
+    # 04: MSE lr = 1e-5
     
-    MODEL = 'EncoderPredictorHI_v3_03'
-    model = EncoderPredictorHI_v3().to(device)
+    # ===========================================
+    # ConfidenceEncoder
+    # 01: MSE lr = 1e-4
+    
+    MODEL = 'ConfidenceEncoder_01'
+    model = ConfidenceEncoder().to(device)
     
     CONSTANTS = InitializationTrain(
         model_name=MODEL,
