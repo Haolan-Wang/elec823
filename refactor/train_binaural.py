@@ -249,7 +249,8 @@ if __name__ == "__main__":
         model=model,
         dataset=dataset,
         CONSTANTS=CONSTANTS,
-        batch_size=16,
+            
+        batch_size=12,
         lr=1e-4,
         num_epochs=10,
         patience=3,

@@ -192,8 +192,8 @@ def train_hurricane(model, dataset_train, dataset_valid, CONSTANTS,
 if __name__ == "__main__":
     # ===========================================
     # WordConfidence
-    # MODEL = 'Hurricane_WordConfidence_03'
-    # model = WordConfidence().to(device)
+    MODEL = 'Hurricane_WordConfidence_03'
+    model = WordConfidence().to(device)
     # 01: MSE avg lr = 1e-3
     # 02: MSEPearsonLoss avg lr = 1e-3
     # 03: MSEPearsonLoss avg lr = 1e-4
@@ -201,8 +201,8 @@ if __name__ == "__main__":
     
     # ===========================================
     # EncoderPredictor
-    MODEL = 'Hurricane_EncoderPredictor_02'
-    model = EncoderPredictor().to(device)
+    # MODEL = 'Hurricane_EncoderPredictor_03'
+    # model = EncoderPredictor().to(device)
     # 01: MSE lr = 1e-4
     # 02: MSEPearsonLoss lr = 1e-4
     # 03: MSEConcordanceLoss lr = 1e-4

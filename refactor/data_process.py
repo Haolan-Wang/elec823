@@ -275,11 +275,11 @@ class HurricaneData(Dataset):
         audio_path = self.samples[idx]
         split_str = audio_path.split('/')
         output = [split_str[-4], split_str[-3], split_str[-2], split_str[-1].split('_')[-1].split('.')[0]]
-        numbers = int(''.join(re.findall(r'\d+', output[0])))
+        mod = int(''.join(re.findall(r'\d+', output[0])))
         noise_type = self.noise_types[output[1]]
         snr = self.snrs[output[2]]
         utt = int(output[3])
-        score = self.scores[numbers-1][noise_type][snr][utt-1]
+        score = self.scores[mod-1][noise_type][snr][utt-1]
         
         waveform, sample_rate = torchaudio.load(audio_path)
         waveform = torch.sum(waveform, dim=0)

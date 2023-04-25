@@ -8,7 +8,7 @@ def is_mono(audio_waveform):
 
 
 def stereo_to_mono(audio_waveform, sample_rate):
-    waveform = torch.sum(audio_waveform, dim=0, keepdim=True)
+    waveform = torch.mean(audio_waveform, dim=0, keepdim=True)
     # Pad or trim the audio to 6 seconds
     desired_length = sample_rate * 6  # keep 6 seconds
     if waveform.size(-1) < desired_length:

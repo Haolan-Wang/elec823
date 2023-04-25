@@ -533,8 +533,9 @@ class ConfidenceEncoder(nn.Module):
         confidence_r = torch.stack(
             list(map(self.truncate_and_pad, confidence_r)), dim=0
         ).to(device)
-        
-        pred_l = self.predictor(encoded_l.contiguous().view(-1, 512 * 151))
+        print(confidence_l.shape, confidence_r.shape)
+        print(encoded_l.shape, encoded_r.shape)
+        pred_l = self.predictor(confidence_l+encoded_l.contiguous().view(-1, 512 * 151))
         pred_r = self.predictor(encoded_r.contiguous().view(-1, 512 * 151))
         
         # Better ear and mapping self.better_ear(pred_l, pred_r)
