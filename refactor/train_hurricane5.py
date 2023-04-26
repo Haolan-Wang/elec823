@@ -201,16 +201,14 @@ if __name__ == "__main__":
     
     # ===========================================
     # EncoderPredictor
-    MODEL = 'Hurricane_EncoderPredictor_05'
+    MODEL = 'Hurricane_EncoderPredictor_09'
     model = EncoderPredictor().to(device)
     # 01: MSE avg lr = 1e-4
     # 02: MSEPearsonLoss avg lr = 1e-4
     # 03: MSEConcordanceLoss avg lr = 1e-4
-    
     # 04: MSEConcordanceLoss BE lr = 1e-4 0.8330
     # 05: MSEPearsonLoss BE lr = 1e-4
     # 06: MSE BE lr = 1e-4 
-    
     # 07: CS: MSEConcordanceLoss BE lr = 1e-4
     # 08: CS: MSEPearsonLoss BE lr = 1e-4
     # 09: CS: MSE BE lr = 1e-4 
@@ -219,8 +217,8 @@ if __name__ == "__main__":
         model_name=MODEL,
         verbose=True
     )
-    dataset_train = HurricaneData('train')
-    dataset_valid = HurricaneData('valid')
+    dataset_train = HurricaneCSData('train')
+    dataset_valid = HurricaneCSData('valid')
     
     train_hurricane(
         model=model,
@@ -232,5 +230,5 @@ if __name__ == "__main__":
         num_epochs=10,
         patience=2,
         tolerance=0.05,
-        criterion=MSEPearsonLoss()
+        criterion=MyMSELoss()
     )

@@ -19,15 +19,32 @@ class MappingLayer(nn.Module):
         return 1 / (1 + torch.exp(self.a * x + self.b))
 
 
+# class BetterEar(nn.Module):
+#     def __init__(self):
+#         super(BetterEar, self).__init__()
+#         self.conv1 = nn.Conv1d(in_channels=2, out_channels=4, kernel_size=1)
+#         self.relu = nn.ReLU()
+#         self.conv2 = nn.Conv1d(in_channels=4, out_channels=1, kernel_size=1)
+#     def forward(self, x):
+#         x = self.relu(self.conv1(x))
+#         x = self.conv2(x)
+#         x = x.squeeze(2)
+#         return x
+
 class BetterEar(nn.Module):
     def __init__(self):
         super(BetterEar, self).__init__()
-        self.a = nn.Parameter(torch.randn(1), requires_grad=True)
-        self.b = nn.Parameter(torch.randn(1), requires_grad=True)
+        self.fc1 = nn.Linear(2, 32)   # 2 input features, 64 output features
+        self.relu1 = nn.ReLU()        # ReLU activation function
+        self.fc2 = nn.Linear(32, 32)  # 64 input features, 32 output features
+        self.relu2 = nn.ReLU()        # ReLU activation function
+        self.fc3 = nn.Linear(32, 1)   # 32 input features, 1 output feature
 
-    def forward(self, x, y):
-        return self.a * x + self.b * y
-
+    def forward(self, x):
+        x = self.relu1(self.fc1(x))   # Apply ReLU activation to first layer output
+        # x = self.relu2(self.fc2(x))   # Apply ReLU activation to second layer output
+        x = self.fc3(x)              # No activation function on the final output layer
+        return x 
 
 class HearingImpairment(nn.Module):
     """Input: (batch_size, 160, 608)
@@ -115,13 +132,18 @@ class WordConfidence(nn.Module):
         confidence_r = torch.stack(
             list(map(self.truncate_and_pad, confidence_r)), dim=0
         ).to(device)
-        pred_l = self.mapping(self.predictor(confidence_l))
-        pred_r = self.mapping(self.predictor(confidence_r))
+
+        
+        # AVG
+        # pred_l = self.mapping(self.predictor(confidence_l))
+        # pred_r = self.mapping(self.predictor(confidence_r))
+        # avg_pred = (pred_l + pred_r) / 2
+        # pred = self.mapping(avg_pred)
         
         # Better ear and mapping
-        avg_pred = (pred_l + pred_r) / 2
-        pred = self.mapping(avg_pred)
-        # pred = self.mapping(self.better_ear(pred_l, pred_r))
+        pred_l = self.predictor(confidence_l)
+        pred_r = self.predictor(confidence_r)
+        pred = self.mapping(self.better_ear(torch.stack([pred_l, pred_r], dim=1)))
 
         return pred
 
@@ -240,8 +262,11 @@ class EncoderPredictor(nn.Module):
         pred_l = self.predictor(encoded_l.contiguous().view(-1, 512 * 151))
         pred_r = self.predictor(encoded_r.contiguous().view(-1, 512 * 151))
         
-        # Better ear and mapping self.better_ear(pred_l, pred_r)
-        avg_pred = (pred_l + pred_r) / 2
+        # Average and mapping
+        # avg_pred = (pred_l + pred_r) / 2
+        # stacked [B,2]
+        stacked_pred = torch.stack([pred_l, pred_r], dim=1).squeeze(2)
+        avg_pred = self.better_ear(stacked_pred)
         pred = self.mapping(avg_pred)
 
         return pred

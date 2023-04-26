@@ -52,7 +52,7 @@ if __name__ == "__main__":
     for mod_folder in os.listdir(root_dir):
         if mod_folder.startswith("."):
             continue
-        ssn_path = os.path.join(root_dir, mod_folder, 'ssn')
+        ssn_path = os.path.join(root_dir, mod_folder, 'cs')
         if not os.path.isdir(ssn_path):
             continue
         for snr in os.listdir(ssn_path):

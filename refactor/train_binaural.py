@@ -194,19 +194,30 @@ if __name__ == "__main__":
     # 01: MSE avg lr = 1e-3
     # 02: MSEPearsonLoss avg lr = 1e-3
     # 03: MSEPearsonLoss avg lr = 1e-4
+    # 04: MSE BetterEar lr = 1e-4
+    # 05: MSEPearsonLoss BetterEar lr = 1e-4
     
     
     # ===========================================
     # EncoderPredictor
-    # MODEL = 'EncoderPredictor_07'
-    # model = EncoderPredictor().to(device)
+    MODEL = 'EncoderPredictor_12'
+    model = EncoderPredictor().to(device)
     # 01: MSE lr = 1e-4
+    # =======
     # 02: MSEPearsonLoss BE lr = 1e-4
     # 03: MSEPearsonLoss BE lr = 1e-3
     # 04: MSEPearsonLoss BE lr = 1e-2
+    # =======
     # 05: MSE avg lr = 1e-3
     # 06: MSEPearsonLoss avg lr = 1e-3
     # 07: MSEPearsonLoss avg lr = 1e-4 This one is good
+    # =======
+    # 08: MSE BetterEar CNN layer lr = 1e-4
+    # 09: MSEPearsonLoss BetterEar CNN layer lr = 1e-4
+    # =======
+    # 10: MSE BetterEar Linear layer lr = 1e-4
+    # 11: MSEPearsonLoss BetterEar Linear layer lr = 1e-4 0.63
+    # 12: MSEConcordanceLoss BetterEar Linear layer lr = 1e-4 0.72
     
     
     # ===========================================
@@ -236,8 +247,8 @@ if __name__ == "__main__":
     # ConfidenceEncoder
     # 01: MSE lr = 1e-4
     
-    MODEL = 'ConfidenceEncoder_01'
-    model = ConfidenceEncoder().to(device)
+    # MODEL = 'WordConfidence_05'
+    # model = WordConfidence().to(device)
     
     CONSTANTS = InitializationTrain(
         model_name=MODEL,
@@ -250,10 +261,10 @@ if __name__ == "__main__":
         dataset=dataset,
         CONSTANTS=CONSTANTS,
             
-        batch_size=12,
+        batch_size=16,
         lr=1e-4,
         num_epochs=10,
         patience=3,
         tolerance=0.05,
-        criterion=MyMSELoss()
+        criterion=MSEConcordanceLoss()
     )

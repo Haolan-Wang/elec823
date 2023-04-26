@@ -156,12 +156,12 @@ def train_hurricane(model, dataset_train, dataset_valid, CONSTANTS,
         with open(CONSTANTS.last_output + f'{CONSTANTS.MODEL_NAME}_val_{epoch}.txt', mode='w') as f:
             f.write("Score, Predict\n")
             for i in range(len(val_scores)):
-                f.write(f"{val_paths[i]}, {val_scores[i].item():.2f}, {val_preds[i].item():.2f}\n")
+                f.write(f"{val_paths[i]}, {val_scores[i].item():.4f}, {val_preds[i].item():.4f}\n")
 
         with open(CONSTANTS.last_output + f'{CONSTANTS.MODEL_NAME}_train_{epoch}.txt', mode='w') as f:
             f.write("Score, Predict\n")
             for i in range(len(train_scores)):
-                f.write(f"{train_paths[i]}, {train_scores[i].item():.2f}, {train_preds[i].item():.2f}\n")
+                f.write(f"{train_paths[i]}, {train_scores[i].item():.4f}, {train_preds[i].item():.4f}\n")
         if early_stop(val_loss, 0, epoch):
 
             # del val_loss, train_scores, train_preds, val_scores, val_preds
@@ -192,20 +192,26 @@ def train_hurricane(model, dataset_train, dataset_valid, CONSTANTS,
 if __name__ == "__main__":
     # ===========================================
     # WordConfidence
-    MODEL = 'Hurricane_WordConfidence_03'
-    model = WordConfidence().to(device)
+    # MODEL = 'Hurricane_WordConfidence_03'
+    # model = WordConfidence().to(device)
     # 01: MSE avg lr = 1e-3
     # 02: MSEPearsonLoss avg lr = 1e-3
-    # 03: MSEPearsonLoss avg lr = 1e-4
+    # 03: MSEPearsonLoss avg lr = 1e-4 
     
     
     # ===========================================
     # EncoderPredictor
-    # MODEL = 'Hurricane_EncoderPredictor_03'
-    # model = EncoderPredictor().to(device)
-    # 01: MSE lr = 1e-4
-    # 02: MSEPearsonLoss lr = 1e-4
-    # 03: MSEConcordanceLoss lr = 1e-4
+    MODEL = 'Hurricane_EncoderPredictor_06'
+    model = EncoderPredictor().to(device)
+    # 01: MSE avg lr = 1e-4
+    # 02: MSEPearsonLoss avg lr = 1e-4
+    # 03: MSEConcordanceLoss avg lr = 1e-4
+    # 04: MSEConcordanceLoss BE lr = 1e-4 0.8330
+    # 05: MSEPearsonLoss BE lr = 1e-4
+    # 06: MSE BE lr = 1e-4 
+    # 07: CS: MSEConcordanceLoss BE lr = 1e-4
+    # 08: CS: MSEPearsonLoss BE lr = 1e-4
+    # 09: CS: MSE BE lr = 1e-4 
 
     CONSTANTS = InitializationTrain(
         model_name=MODEL,
@@ -224,5 +230,5 @@ if __name__ == "__main__":
         num_epochs=10,
         patience=2,
         tolerance=0.05,
-        criterion=MSEPearsonLoss()
+        criterion=MyMSELoss()
     )
