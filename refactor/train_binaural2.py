@@ -251,7 +251,7 @@ if __name__ == "__main__":
     # 04: MSEPearsonLoss lr = 1e-3
     
     
-    MODEL = 'ConfidenceEncoder_02'
+    MODEL = 'ConfidenceEncoder_03'
     model = ConfidenceEncoder().to(device)
     
     CONSTANTS = InitializationTrain(
@@ -266,9 +266,9 @@ if __name__ == "__main__":
         CONSTANTS=CONSTANTS,
             
         batch_size=8,
-        lr=1e-3,
+        lr=1e-4,
         num_epochs=10,
         patience=3,
         tolerance=0.05,
-        criterion=MSEConcordanceLoss()
+        criterion=MSEPearsonLoss()
     )

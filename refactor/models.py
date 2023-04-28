@@ -46,6 +46,7 @@ class BetterEar(nn.Module):
         x = self.fc3(x)              # No activation function on the final output layer
         return x 
 
+
 class HearingImpairment(nn.Module):
     """Input: (batch_size, 160, 608)
         Output: (batch_size, 512, 151)
@@ -509,7 +510,7 @@ class ConfidenceEncoder(nn.Module):
         self.logmel = pretrained_model.preprocessor
         self.conformer_encoder = pretrained_model.encoder
         self.predictor = nn.Sequential(
-            nn.Linear(in_features=512 * 151, out_features=256),
+            nn.Linear(in_features=522 * 151, out_features=256),
             nn.ReLU(),
             nn.Linear(in_features=256, out_features=128),
             nn.ReLU(),
@@ -558,13 +559,38 @@ class ConfidenceEncoder(nn.Module):
         confidence_r = torch.stack(
             list(map(self.truncate_and_pad, confidence_r)), dim=0
         ).to(device)
-        print(confidence_l.shape, confidence_r.shape)
-        print(encoded_l.shape, encoded_r.shape)
-        pred_l = self.predictor(confidence_l+encoded_l.contiguous().view(-1, 512 * 151))
-        pred_r = self.predictor(encoded_r.contiguous().view(-1, 512 * 151))
+        # Confidence feature: [B, 10]
         
-        # Better ear and mapping self.better_ear(pred_l, pred_r)
-        avg_pred = (pred_l + pred_r) / 2
-        pred = self.mapping(avg_pred)
+        # Concatenate confidence feature with encoder output
+        # concat_feature_l: [B, 522, 151]
+        confidence_l = torch.unsqueeze(confidence_l, -1).repeat(1, 1, 151)
+        confidence_r = torch.unsqueeze(confidence_r, -1).repeat(1, 1, 151)
+        
+        concat_feature_l = torch.cat((encoded_l, confidence_l), dim=1)
+        concat_feature_r = torch.cat((encoded_r, confidence_r), dim=1)
+        
+        pred_l = self.predictor(concat_feature_l.contiguous().view(-1, 522 * 151))
+        pred_r = self.predictor(concat_feature_r.contiguous().view(-1, 522 * 151))
+        
+        # Better Ear
+        stacked_pred = torch.stack([pred_l, pred_r], dim=1).squeeze(2)
+        avg_pred = self.better_ear(stacked_pred)
+        pred = self.mapping(avg_pred) 
 
         return pred
+
+    def truncate_and_pad(self, tensor):
+        FIXED_LENGTH = 10
+        if type(tensor) is not torch.Tensor:
+            tensor = torch.tensor(tensor)
+        current_length = tensor.size(0)
+
+        # If the tensor length is greater than the target length, truncate it
+        if current_length > FIXED_LENGTH:
+            tensor = tensor[:FIXED_LENGTH]
+        # If the tensor length is less than the target length, pad it with zeros
+        elif current_length < FIXED_LENGTH:
+            pad_size = FIXED_LENGTH - current_length
+            padding = torch.zeros(pad_size, dtype=tensor.dtype, device=tensor.device)
+            tensor = torch.cat((tensor, padding), dim=0)
+        return tensor

@@ -234,15 +234,15 @@ if __name__ == "__main__":
     # 08: ALL: MSEPearsonLoss BE lr = 1e-4
     # 09: ALL: MSE BE lr = 1e-4
     
-    MODEL = 'ConfidenceEncoder_03'
+    MODEL = 'ConfidenceEncoder_08'
     model = ConfidenceEncoder().to(device)
 
     CONSTANTS = InitializationTrain(
         model_name=MODEL,
         verbose=True
     )
-    dataset_train = HurricaneSSNData('train')
-    dataset_valid = HurricaneSSNData('valid')
+    dataset_train = HurricaneData('train')
+    dataset_valid = HurricaneData('valid')
     
     train_hurricane(
         model=model,
@@ -254,5 +254,5 @@ if __name__ == "__main__":
         num_epochs=10,
         patience=2,
         tolerance=0.05,
-        criterion=MyMSELoss()
+        criterion=MSEPearsonLoss()
     )

@@ -201,36 +201,58 @@ if __name__ == "__main__":
     
     # ===========================================
     # EncoderPredictor
-    MODEL = 'Hurricane_EncoderPredictor_05'
-    model = EncoderPredictor().to(device)
-    # 01: MSE avg lr = 1e-4
-    # 02: MSEPearsonLoss avg lr = 1e-4
-    # 03: MSEConcordanceLoss avg lr = 1e-4
+    # MODEL = 'Hurricane_EncoderPredictor_12'
+    # model = EncoderPredictor().to(device)
+    # 01: SSN: MSE avg lr = 1e-4
+    # 02: SSN: MSEPearsonLoss avg lr = 1e-4
+    # 03: SSN: MSEConcordanceLoss avg lr = 1e-4
     
-    # 04: MSEConcordanceLoss BE lr = 1e-4 0.8330
-    # 05: MSEPearsonLoss BE lr = 1e-4
-    # 06: MSE BE lr = 1e-4 
+    # 04: SSN: MSEConcordanceLoss BE lr = 1e-4 0.8330
+    # 05: SSN: MSEPearsonLoss BE lr = 1e-4
+    # 06: SSN: MSE BE lr = 1e-4 
     
     # 07: CS: MSEConcordanceLoss BE lr = 1e-4
     # 08: CS: MSEPearsonLoss BE lr = 1e-4
     # 09: CS: MSE BE lr = 1e-4 
+    
+    # 10: ALL: MSEConcordanceLoss BE lr = 1e-4
+    # 11: ALL: MSEPearsonLoss BE lr = 1e-4 0.6102
+    # 12: ALL: MSE BE lr = 1e-4
+    
+    
+    # ===========================================
+    # ConfidenceEncoder
+    # 01: SSN: MSEConcordanceLoss BE lr = 1e-4
+    # 02: SSN: MSEPearsonLoss BE lr = 1e-4
+    # 03: SSN: MSE BE lr = 1e-4
+    
+    # 04: CS: MSEConcordanceLoss BE lr = 1e-4
+    # 05: CS: MSEPearsonLoss BE lr = 1e-4
+    # 06: CS: MSE BE lr = 1e-4
+    
+    # 07: ALL: MSEConcordanceLoss BE lr = 1e-4
+    # 08: ALL: MSEPearsonLoss BE lr = 1e-4
+    # 09: ALL: MSE BE lr = 1e-4
+    
+    MODEL = 'ConfidenceEncoder_01'
+    model = ConfidenceEncoder().to(device)
 
     CONSTANTS = InitializationTrain(
         model_name=MODEL,
         verbose=True
     )
-    dataset_train = HurricaneData('train')
-    dataset_valid = HurricaneData('valid')
+    dataset_train = HurricaneSSNData('train')
+    dataset_valid = HurricaneSSNData('valid')
     
     train_hurricane(
         model=model,
         dataset_train=dataset_train,
         dataset_valid=dataset_valid,
         CONSTANTS=CONSTANTS,
-        batch_size=16,
+        batch_size=8,
         lr=1e-4,
         num_epochs=10,
         patience=2,
         tolerance=0.05,
-        criterion=MSEPearsonLoss()
+        criterion=MSEConcordanceLoss()
     )
