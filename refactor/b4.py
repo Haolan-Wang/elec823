@@ -192,69 +192,15 @@ def train_hurricane(model, dataset_train, dataset_valid, CONSTANTS,
 
 
 if __name__ == "__main__":
-    # ===========================================
-    # WordConfidence
-    # MODEL = 'Hurricane_WordConfidence_03'
-    # model = WordConfidence().to(device)
-    # 01: MSE avg lr = 1e-3
-    # 02: MSEPearsonLoss avg lr = 1e-3
-    # 03: MSEPearsonLoss avg lr = 1e-4 
-    
-    
-    # ===========================================
-    # EncoderPredictor
-    # MODEL = 'Hurricane_EncoderPredictor_12'
-    # model = EncoderPredictor().to(device)
-    # 01: SSN: MSE avg lr = 1e-4
-    # 02: SSN: MSEPearsonLoss avg lr = 1e-4
-    # 03: SSN: MSEConcordanceLoss avg lr = 1e-4
-    
-    # 04: SSN: MSEConcordanceLoss BE lr = 1e-4 0.8330
-    # 05: SSN: MSEPearsonLoss BE lr = 1e-4
-    # 06: SSN: MSE BE lr = 1e-4 
-    
-    # 07: CS: MSEConcordanceLoss BE lr = 1e-4
-    # 08: CS: MSEPearsonLoss BE lr = 1e-4
-    # 09: CS: MSE BE lr = 1e-4 
-    
-    # 10: ALL: MSEConcordanceLoss BE lr = 1e-4
-    # 11: ALL: MSEPearsonLoss BE lr = 1e-4 0.6102
-    # 12: ALL: MSE BE lr = 1e-4
-    
-    
-    # ===========================================
-    # ConfidenceEncoder
-    # 01: SSN: MSEConcordanceLoss BE lr = 1e-4
-    # 02: SSN: MSEPearsonLoss BE lr = 1e-4
-    # 03: SSN: MSE BE lr = 1e-4
-    
-    # 04: CS: MSEConcordanceLoss BE lr = 1e-4
-    # 05: CS: MSEPearsonLoss BE lr = 1e-4
-    # 06: CS: MSE BE lr = 1e-4
-    
-    # 07: ALL: MSEConcordanceLoss BE lr = 1e-4
-    # 08: ALL: MSEPearsonLoss BE lr = 1e-4
-    # 09: ALL: MSE BE lr = 1e-4
-    
-    # ===========================================
-    # compare better ear
-    # EncoderPredictor_BE MSEConcordanceLoss 0.7765
-    # EncoderPredictor_Fusing MSEConcordanceLoss 0.8024
-    
-    # ===========================================
-    # compare loss fuction
-    # EncoderPredictor_Fusing MSEConcordanceLoss 0.8024
-    # EncoderPredictor_Fusing_Pearson MSEPearsonLoss 
-    # EncoderPredictor_Fusing_MSE MSE 0.8292
-    
-    # ===========================================
-    # compare noise type
-    # EncoderPredictor_Fusing SSN
-    # EncoderPredictor_Fusing_CS CS
-    # EncoderPredictor_Fusing_ALL ALL
-    
-    MODEL = 'EncoderPredictor_Fusing_MSE'
-    model = EncoderPredictor_Fusing().to(device)
+    # b1: b_Encoder_Fusing_MSE
+    # b2: b_Encoder_Fusing_Pearson
+    # b3: b_Encoder_Fusing_CCC
+    # b4: b_Encoder_BE_MSE
+    # b5: b_Encoder_BE_Pearson
+    # b6: b_Encoder_BE_CCC
+    MODEL = 'b_Encoder_BE_MSE'
+    loss_fn = MyMSELoss()
+    model = EncoderPredictor_BE().to(device)
 
     CONSTANTS = InitializationTrain(
         model_name=MODEL,
@@ -273,5 +219,5 @@ if __name__ == "__main__":
         num_epochs=10,
         patience=2,
         tolerance=0.05,
-        criterion=MyMSELoss()
+        criterion=loss_fn
     )

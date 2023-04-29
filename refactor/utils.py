@@ -220,3 +220,17 @@ class EarlyStop:
         except:
             print("[Error] Saving failed.")
 
+def truncate_and_pad(tensor, desired_length):
+    if type(tensor) is not torch.Tensor:
+        tensor = torch.tensor(tensor)
+    current_length = tensor.size(0)
+
+    # If the tensor length is greater than the target length, truncate it
+    if current_length > desired_length:
+        tensor = tensor[:desired_length]
+    # If the tensor length is less than the target length, pad it with zeros
+    elif current_length < desired_length:
+        pad_size = desired_length - current_length
+        padding = torch.zeros(pad_size, dtype=tensor.dtype, device=tensor.device)
+        tensor = torch.cat((tensor, padding), dim=0)
+    return tensor
