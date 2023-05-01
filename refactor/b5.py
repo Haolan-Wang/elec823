@@ -143,11 +143,13 @@ def train_hurricane(model, dataset_train, dataset_valid, CONSTANTS,
         writer.add_scalar("Train/MSE", train_error.mse_loss, epoch)
         writer.add_scalar("Train/MAE", train_error.mae_loss, epoch)
         writer.add_scalar("Train/Pearson", train_error.pearson_coef, epoch)
+        writer.add_scalar("Train/CCC", train_error.ccc, epoch)
         writer.add_scalar("Train/Spearman", train_error.spearman_coef, epoch)
         writer.add_scalar("Validation/loss", val_loss, epoch)
         writer.add_scalar("Validation/MSE", val_error.mse_loss, epoch)
         writer.add_scalar("Validation/MAE", val_error.mae_loss, epoch)
         writer.add_scalar("Validation/Pearson", val_error.pearson_coef, epoch)
+        writer.add_scalar("Validation/CCC", val_error.ccc, epoch)
         writer.add_scalar("Validation/Spearman", val_error.spearman_coef, epoch)
 
         # del train_loss, train_error, val_error
